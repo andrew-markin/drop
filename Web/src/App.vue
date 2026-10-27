@@ -26,6 +26,9 @@
           <q-banner v-if="state.stopped" rounded class="bg-negative text-white q-mt-md">
             The computer is out of disk space. Free some space and reload this page.
           </q-banner>
+          <q-banner v-else-if="statusError" rounded class="bg-negative text-white q-mt-md">
+            {{ describeError(statusError) }}.
+          </q-banner>
           <q-banner v-else-if="state.offline" rounded class="bg-warning text-white q-mt-md">
             <template #avatar><q-spinner size="24px" /></template>
             The connection is lost, trying again. Check that this device is on the same network as
@@ -81,7 +84,32 @@
             </q-item>
           </q-list>
 
-          <div v-else class="col column flex-center text-center text-grey-5 q-pa-lg">
+          <template v-if="visibleEarlier.length > 0">
+            <div class="text-body2 q-mt-lg">Already on the computer</div>
+            <q-list dense class="q-mt-sm">
+              <q-item v-for="(file, index) in visibleEarlier" :key="index" class="q-px-none">
+                <q-item-section>
+                  <q-item-label lines="1">{{ file.name }}</q-item-label>
+                  <q-item-label caption>
+                    <template v-if="file.complete">{{ formatSize(file.size) }}</template>
+                    <template v-else>
+                      {{ formatSize(file.sent) }} of {{ formatSize(file.size) }}, pick it again to
+                      continue
+                    </template>
+                  </q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                  <q-icon v-if="file.complete" name="check_circle" color="positive" />
+                  <q-icon v-else name="pause_circle" color="grey-6" />
+                </q-item-section>
+              </q-item>
+            </q-list>
+          </template>
+
+          <div
+            v-if="state.items.length === 0 && visibleEarlier.length === 0"
+            class="col column flex-center text-center text-grey-5 q-pa-lg"
+          >
             Photos, videos and any other files go to the Downloads folder of the computer.
           </div>
         </template>
@@ -91,10 +119,11 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
 
 import { Api } from '@/api'
 import { keepAwake } from '@/awake'
+import { readEarlier, withoutPicked } from '@/earlier'
 import { formatSize } from '@/format'
 import { readSecret } from '@/link'
 import { Uploader } from '@/uploader'
@@ -118,7 +147,8 @@ const snapshot = (uploader) => ({
   stopped: uploader.stopped
 })
 
-const uploader = new Uploader(new Api(secret), {
+const api = new Api(secret)
+const uploader = new Uploader(api, {
   onChange: (uploader) => {
     state.value = snapshot(uploader)
     keepAwake(uploader.busy)
@@ -126,6 +156,19 @@ const uploader = new Uploader(new Api(secret), {
 })
 
 const state = shallowRef(snapshot(uploader))
+
+const earlier = shallowRef([])
+const visibleEarlier = computed(() => withoutPicked(earlier.value, state.value.items))
+const statusError = shallowRef()
+
+// After a reload the page shows what already reached the computer, and a wrong link shows at once
+async function loadEarlier() {
+  try {
+    earlier.value = readEarlier(await api.status())
+  } catch (error) {
+    if (!error.retryable) statusError.value = error
+  }
+}
 
 function choose() {
   keepAwake(true) // Needs the tap, see awake.js
@@ -151,7 +194,10 @@ function warnBeforeLeaving(event) {
   if (uploader.busy) event.preventDefault()
 }
 
-onMounted(() => window.addEventListener('beforeunload', warnBeforeLeaving))
+onMounted(() => {
+  window.addEventListener('beforeunload', warnBeforeLeaving)
+  if (secret) loadEarlier()
+})
 onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeLeaving))
 </script>
 
