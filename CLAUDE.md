@@ -27,6 +27,10 @@ https://github.com/andrew-markin/mult.
   cmake --build Builds/Debug --parallel && ctest --test-dir Builds/Debug --output-on-failure
   ```
 
+  `ctest` also runs the end-to-end tests of `Web/e2e`: the web client code against
+  `DropHeadless`, the server without the window that is built only with the tests. Alone they
+  run with `DROP_HEADLESS=<path to DropHeadless> npm run test:e2e` in `Web/`.
+
 ## Decisions to keep
 
 - The link secret `k` lives only in the URL fragment and in memory, never in logs, files or
