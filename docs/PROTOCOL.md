@@ -2,7 +2,7 @@
 
 This document describes how the web page (the client) talks to the desktop application (the
 server). Both implementations must follow it byte for byte and are checked against the same test
-vectors.
+vectors, `docs/vectors/protocol.json`, made by a third implementation (`docs/vectors/generate.py`).
 
 ## Goals and threat model
 
@@ -132,7 +132,8 @@ sealed = nonce ‖ XChaCha20-Poly1305(key, nonce, plaintext, ad)
   ```
 
   `method` and `path` are exactly as sent in the request line, for example
-  `POST /api/session/<sid>/chunk/<file>/<index>`.
+  `POST /api/session/<sid>/chunk/<file>/<index>`. Paths hold only base64url characters, digits and
+  slashes, so they never need percent-encoding.
 
 Requests and answers are `Content-Type: application/octet-stream`. Unless stated otherwise, their
 plaintext is JSON.
