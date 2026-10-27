@@ -118,7 +118,7 @@ const snapshot = (uploader) => ({
   stopped: uploader.stopped
 })
 
-const uploader = new Uploader(new Api(), {
+const uploader = new Uploader(new Api(secret), {
   onChange: (uploader) => {
     state.value = snapshot(uploader)
     keepAwake(uploader.busy)
