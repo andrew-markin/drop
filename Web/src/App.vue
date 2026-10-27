@@ -15,6 +15,7 @@
           <q-btn
             unelevated
             color="primary"
+            text-color="ink"
             size="lg"
             icon="add_photo_alternate"
             :label="t.chooseFiles"
@@ -202,6 +203,13 @@ onMounted(() => {
 })
 onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeLeaving))
 </script>
+
+<style>
+/* White on the green of the icon is hard to read, its dark ink is not */
+.text-ink {
+  color: #0b1a0f !important;
+}
+</style>
 
 <style scoped>
 .page {
