@@ -30,6 +30,19 @@ install on the phone: scan a QR code and pick the files.
 Every start of Drop is a new drop: a new folder, a new address and a new secret, so links from
 earlier starts stop working.
 
+### iPhone and iPad
+
+After you pick photos and videos from the photo library, the picker stays on the screen for a
+while before the files start to go. In that time iOS prepares them: copies them out of the
+library, downloads originals kept in iCloud, and converts them to the most compatible formats,
+so photos arrive as JPEG and videos as H.264. With many photos or long videos this takes minutes.
+The page learns about the files only when iOS hands them over, so neither it nor its settings
+can make this faster; the picker just has to be left alone until it closes.
+
+The upside is that the files open on any computer, Windows without HEIC and HEVC support
+included. To get the originals instead, look for **Options** at the top of the photo picker,
+where some iOS versions let you choose the format.
+
 ## Security
 
 The page is served over plain HTTP, the only way a phone browser can reach a computer on the
