@@ -1,6 +1,7 @@
 # Builds
 /Builds
 /Release
+.env
 
 # Editors
 CMakeLists.txt.user
