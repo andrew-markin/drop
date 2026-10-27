@@ -64,6 +64,8 @@ add_executable(
     Drop WIN32
     Drop.cpp
     Drop.h
+    LocalNetwork.cpp
+    LocalNetwork.h
     Resources.qrc
     Storage.cpp
     Storage.h
