@@ -3,7 +3,7 @@
     <q-page-container>
       <q-page class="column no-wrap q-pa-md text-accent page">
         <div class="row items-center no-wrap q-mb-md">
-          <q-icon name="water_drop" size="40px" color="primary" />
+          <img src="/favicon.svg" alt="" width="40" height="40" />
           <div class="text-h5 q-ml-sm">Drop</div>
         </div>
 
