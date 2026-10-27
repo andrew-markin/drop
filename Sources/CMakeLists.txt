@@ -73,6 +73,8 @@ add_executable(
     Resources.qrc
     Storage.cpp
     Storage.h
+    Uploads.cpp
+    Uploads.h
     WebServer.cpp
     WebServer.h
 )
