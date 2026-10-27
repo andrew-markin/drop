@@ -235,7 +235,7 @@ void Drop::addUpload(const QByteArray& id)
     QTreeWidgetItem* item = new QTreeWidgetItem(m_uploadsTreeWidget);
     item->setText(UploadNameColumn, upload.name);
     item->setToolTip(UploadNameColumn, upload.name);
-    item->setText(UploadSizeColumn, QLocale().formattedDataSize(upload.size));
+    item->setText(UploadSizeColumn, QLocale().formattedDataSize(upload.size, 1, QLocale::DataSizeSIFormat));
     item->setTextAlignment(UploadSizeColumn, Qt::AlignRight | Qt::AlignVCenter);
     item->setTextAlignment(UploadStatusColumn, Qt::AlignRight | Qt::AlignVCenter);
     m_uploadItems.insert(id, item);
