@@ -81,3 +81,27 @@ add_drop_test(
 
 target_link_libraries(TestCrypto PRIVATE Sodium::Sodium)
 target_compile_definitions(TestCrypto PRIVATE DROP_VECTORS_PATH="${PROJECT_SOURCE_DIR}/../docs/vectors/protocol.json")
+
+# The server without the window, driven by the end-to-end tests of the web client in Web/e2e
+
+add_executable(
+    DropHeadless
+    DropHeadless.cpp
+    ${PROJECT_SOURCE_DIR}/Crypto.cpp
+    ${PROJECT_SOURCE_DIR}/Crypto.h
+    ${PROJECT_SOURCE_DIR}/LocalNetwork.cpp
+    ${PROJECT_SOURCE_DIR}/LocalNetwork.h
+    ${PROJECT_SOURCE_DIR}/Storage.cpp
+    ${PROJECT_SOURCE_DIR}/Storage.h
+    ${PROJECT_SOURCE_DIR}/Uploads.cpp
+    ${PROJECT_SOURCE_DIR}/Uploads.h
+    ${PROJECT_SOURCE_DIR}/WebServer.cpp
+    ${PROJECT_SOURCE_DIR}/WebServer.h
+)
+
+target_include_directories(DropHeadless PRIVATE ${PROJECT_SOURCE_DIR})
+target_link_libraries(DropHeadless PRIVATE DropDefinitions Qt6::Network Qt6::HttpServer Sodium::Sodium)
+
+if(WIN32)
+    target_compile_options(DropHeadless PRIVATE /utf-8 /nologo)
+endif()
