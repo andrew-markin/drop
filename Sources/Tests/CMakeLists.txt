@@ -82,6 +82,14 @@ add_drop_test(
 target_link_libraries(TestCrypto PRIVATE Sodium::Sodium)
 target_compile_definitions(TestCrypto PRIVATE DROP_VECTORS_PATH="${PROJECT_SOURCE_DIR}/../docs/vectors/protocol.json")
 
+add_drop_test(
+    TestTranslator
+    ${PROJECT_SOURCE_DIR}/Translator.cpp
+    ${PROJECT_SOURCE_DIR}/Translator.h
+)
+
+target_compile_definitions(TestTranslator PRIVATE DROP_TRANSLATED_SOURCE_PATH="${PROJECT_SOURCE_DIR}/Drop.cpp")
+
 # The server without the window, driven by the end-to-end tests of the web client in Web/e2e
 
 add_executable(

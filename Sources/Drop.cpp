@@ -21,6 +21,7 @@
 
 #include "Crypto.h"
 #include "QrCodeWidget.h"
+#include "Translator.h"
 #include "Uploads.h"
 #include "WebServer.h"
 
@@ -368,7 +369,7 @@ void Drop::updateTotalProgress()
     }
 
     m_totalProgressBar->setValue(totalSize > 0 ? int(receivedSize * 1000 / totalSize) : 1000);
-    m_totalProgressBar->setToolTip(tr("%1 of %2 files received").arg(completeCount).arg(uploads.size()));
+    m_totalProgressBar->setToolTip(tr("%1 of %n file(s) received", "", uploads.size()).arg(completeCount));
 }
 
 void Drop::updateStatus()
@@ -411,6 +412,9 @@ int main(int argc, char* argv[])
 
     QApplication application(argc, argv);
     QApplication::setWindowIcon(QIcon(":/Drop.svg"));
+
+    Translator translator(QLocale::system());
+    QApplication::installTranslator(&translator);
 
     if (!Crypto::init())
     {
