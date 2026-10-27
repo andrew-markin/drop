@@ -3,13 +3,19 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QComboBox>
+#include <QDesktopServices>
+#include <QHeaderView>
 #include <QFormLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QLocale>
+#include <QProgressBar>
 #include <QPushButton>
 #include <QRandomGenerator>
 #include <QStandardPaths>
 #include <QTimer>
+#include <QTreeWidget>
+#include <QUrl>
 #include <QVBoxLayout>
 
 #include "QrCodeWidget.h"
@@ -31,6 +37,13 @@ QByteArray generateSecret()
     QRandomGenerator::system()->fillRange(reinterpret_cast<quint32*>(secret.data()), SecretSize / sizeof(quint32));
     return secret;
 }
+
+enum UploadColumn
+{
+    UploadNameColumn,
+    UploadSizeColumn,
+    UploadStatusColumn,
+};
 
 QString describeCandidate(const LocalNetwork::Candidate& candidate)
 {
@@ -68,6 +81,31 @@ Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(generateSecret()), m_web
     m_statusLabel->setAlignment(Qt::AlignCenter);
     m_statusLabel->setWordWrap(true);
 
+    m_uploadsTreeWidget = new QTreeWidget(this);
+    m_uploadsTreeWidget->setHeaderLabels({tr("Name"), tr("Size"), tr("Status")});
+    m_uploadsTreeWidget->setRootIsDecorated(false);
+    m_uploadsTreeWidget->setUniformRowHeights(true);
+    m_uploadsTreeWidget->setSelectionMode(QAbstractItemView::NoSelection);
+    m_uploadsTreeWidget->setFocusPolicy(Qt::NoFocus);
+    m_uploadsTreeWidget->header()->setStretchLastSection(false);
+    m_uploadsTreeWidget->header()->setSectionResizeMode(UploadNameColumn, QHeaderView::Stretch);
+    m_uploadsTreeWidget->header()->setSectionResizeMode(UploadSizeColumn, QHeaderView::ResizeToContents);
+    m_uploadsTreeWidget->header()->setSectionResizeMode(UploadStatusColumn, QHeaderView::ResizeToContents);
+    m_uploadsTreeWidget->hide();
+
+    m_totalProgressBar = new QProgressBar(this);
+    m_totalProgressBar->setRange(0, 1000);
+    m_totalProgressBar->setTextVisible(false);
+    m_totalProgressBar->hide();
+
+    m_openButton = new QPushButton(tr("Open Folder"), this);
+    m_openButton->hide();
+    connect(m_openButton, &QPushButton::clicked, this, &Drop::openDropDirectory);
+
+    connect(m_uploads, &Uploads::uploadAdded, this, &Drop::addUpload);
+    connect(m_uploads, &Uploads::uploadChanged, this, &Drop::updateUpload);
+    connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, &QPushButton::show);
+
     QFormLayout* networkLayout = new QFormLayout();
     networkLayout->addRow(tr("Network:"), m_networkComboBox);
     m_networkLabel = qobject_cast<QLabel*>(networkLayout->labelForField(m_networkComboBox));
@@ -77,12 +115,18 @@ Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(generateSecret()), m_web
     copyLayout->addWidget(m_copyButton);
     copyLayout->addStretch();
 
+    QHBoxLayout* progressLayout = new QHBoxLayout();
+    progressLayout->addWidget(m_totalProgressBar, 1);
+    progressLayout->addWidget(m_openButton);
+
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(m_qrCodeWidget, 1);
     layout->addWidget(m_addressLabel);
     layout->addLayout(copyLayout);
     layout->addWidget(m_statusLabel);
     layout->addLayout(networkLayout);
+    layout->addWidget(m_uploadsTreeWidget, 1);
+    layout->addLayout(progressLayout);
 
     m_refreshTimer = new QTimer(this);
     m_refreshTimer->setInterval(RefreshCandidatesTimeout);
@@ -90,7 +134,7 @@ Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(generateSecret()), m_web
     m_refreshTimer->start();
 
     refreshCandidates();
-    resize(420, 560);
+    resize(440, 720);
 }
 
 void Drop::refreshCandidates()
@@ -177,6 +221,74 @@ void Drop::copyLink()
 
     m_copyButton->setText(tr("Copied"));
     QTimer::singleShot(CopiedFeedbackTimeout, m_copyButton, [this]() { m_copyButton->setText(tr("Copy Link")); });
+}
+
+void Drop::openDropDirectory()
+{
+    QDesktopServices::openUrl(QUrl::fromLocalFile(m_uploads->dropDirectoryPath()));
+}
+
+void Drop::addUpload(const QByteArray& id)
+{
+    Uploads::Upload upload = m_uploads->upload(id);
+
+    QTreeWidgetItem* item = new QTreeWidgetItem(m_uploadsTreeWidget);
+    item->setText(UploadNameColumn, upload.name);
+    item->setToolTip(UploadNameColumn, upload.name);
+    item->setText(UploadSizeColumn, QLocale().formattedDataSize(upload.size));
+    item->setTextAlignment(UploadSizeColumn, Qt::AlignRight | Qt::AlignVCenter);
+    item->setTextAlignment(UploadStatusColumn, Qt::AlignRight | Qt::AlignVCenter);
+    m_uploadItems.insert(id, item);
+
+    m_uploadsTreeWidget->show();
+    m_totalProgressBar->show();
+
+    updateUpload(id);
+}
+
+void Drop::updateUpload(const QByteArray& id)
+{
+    QTreeWidgetItem* item = m_uploadItems.value(id);
+
+    if (!item)
+    {
+        return;
+    }
+
+    Uploads::Upload upload = m_uploads->upload(id);
+
+    if (upload.complete)
+    {
+        item->setText(UploadStatusColumn, tr("Done"));
+        item->setToolTip(UploadNameColumn, upload.path);
+    }
+    else
+    {
+        qint64 percent = upload.size > 0 ? upload.receivedSize(m_uploads->chunkSize()) * 100 / upload.size : 0;
+        item->setText(UploadStatusColumn, QString("%1%").arg(percent));
+    }
+
+    m_uploadsTreeWidget->scrollToItem(item);
+    updateTotalProgress();
+}
+
+void Drop::updateTotalProgress()
+{
+    qint64 totalSize = 0;
+    qint64 receivedSize = 0;
+    int completeCount = 0;
+
+    const QList<Uploads::Upload> uploads = m_uploads->uploads();
+
+    for (const Uploads::Upload& upload : uploads)
+    {
+        totalSize += upload.size;
+        receivedSize += upload.receivedSize(m_uploads->chunkSize());
+        completeCount += upload.complete ? 1 : 0;
+    }
+
+    m_totalProgressBar->setValue(totalSize > 0 ? int(receivedSize * 1000 / totalSize) : 1000);
+    m_totalProgressBar->setToolTip(tr("%1 of %2 files received").arg(completeCount).arg(uploads.size()));
 }
 
 void Drop::updateStatus()
