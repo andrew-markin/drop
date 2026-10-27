@@ -11,6 +11,7 @@ class QComboBox;
 class QLabel;
 class QProgressBar;
 class QPushButton;
+class QSystemTrayIcon;
 class QTimer;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -33,6 +34,8 @@ private slots:
 
     void addUpload(const QByteArray& id);
     void updateUpload(const QByteArray& id);
+
+    void maybeNotifyComplete();
 
 private:
     void updateStatus();
@@ -59,6 +62,10 @@ private:
     QHash<QByteArray, QTreeWidgetItem*> m_uploadItems;
     QProgressBar* m_totalProgressBar;
     QPushButton* m_openButton;
+
+    QSystemTrayIcon* m_trayIcon;
+    QTimer* m_completeTimer;
+    int m_notifiedCount;
 };
 
 #endif // DROP_H

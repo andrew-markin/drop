@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QStandardPaths>
+#include <QSystemTrayIcon>
 #include <QTimer>
 #include <QTreeWidget>
 #include <QUrl>
@@ -30,6 +31,10 @@ static const int RefreshCandidatesTimeout = 3000; // 3s
 
 static const int CopiedFeedbackTimeout = 1500; // 1.5s
 
+// A device announces the next file only after the previous one is done, so everything looks
+// complete between files for a moment. The drop is over when it stays so for a while.
+static const int CompleteQuietTimeout = 5000; // 5s
+
 enum UploadColumn
 {
     UploadNameColumn,
@@ -44,7 +49,8 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
 
 } // namespace
 
-Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr)
+Drop::Drop(QWidget* parent)
+    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_notifiedCount(0)
 {
     setWindowTitle(PROJECT_TITLE);
 
@@ -97,6 +103,25 @@ Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(Crypto::randomBytes(Cryp
     connect(m_uploads, &Uploads::uploadAdded, this, &Drop::addUpload);
     connect(m_uploads, &Uploads::uploadChanged, this, &Drop::updateUpload);
     connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, &QPushButton::show);
+
+    // Only to tell when a drop is over: the application quits with its window
+    m_trayIcon = new QSystemTrayIcon(QApplication::windowIcon(), this);
+    m_trayIcon->setToolTip(PROJECT_TITLE);
+    m_trayIcon->show();
+
+    connect(m_trayIcon, &QSystemTrayIcon::messageClicked, this, &Drop::openDropDirectory);
+    connect(m_trayIcon, &QSystemTrayIcon::activated, this, [this]() {
+        showNormal();
+        raise();
+        activateWindow();
+    });
+
+    m_completeTimer = new QTimer(this);
+    m_completeTimer->setSingleShot(true);
+    m_completeTimer->setInterval(CompleteQuietTimeout);
+    connect(m_completeTimer, &QTimer::timeout, this, &Drop::maybeNotifyComplete);
+    connect(m_uploads, &Uploads::uploadAdded, m_completeTimer, qOverload<>(&QTimer::start));
+    connect(m_uploads, &Uploads::uploadChanged, m_completeTimer, qOverload<>(&QTimer::start));
 
     QFormLayout* networkLayout = new QFormLayout();
     networkLayout->addRow(tr("Network:"), m_networkComboBox);
@@ -262,6 +287,35 @@ void Drop::updateUpload(const QByteArray& id)
 
     m_uploadsTreeWidget->scrollToItem(item);
     updateTotalProgress();
+}
+
+void Drop::maybeNotifyComplete()
+{
+    int completeCount = 0;
+    const QList<Uploads::Upload> uploads = m_uploads->uploads();
+
+    for (const Uploads::Upload& upload : uploads)
+    {
+        if (!upload.complete)
+        {
+            return; // Still coming, or the device went away and may come back
+        }
+
+        completeCount++;
+    }
+
+    int newCount = completeCount - m_notifiedCount;
+
+    if (newCount <= 0)
+    {
+        return;
+    }
+
+    m_notifiedCount = completeCount;
+
+    m_trayIcon->showMessage(tr("Drop is complete"), tr("Received %n file(s). Click to open the folder.", "", newCount),
+                            QApplication::windowIcon());
+    QApplication::alert(this);
 }
 
 void Drop::updateTotalProgress()
