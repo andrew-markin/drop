@@ -215,8 +215,9 @@ show what is already done:
 - A file is written to a hidden temporary name inside the drop directory and renamed when it is
   complete. If the name is taken, a suffix is added: `IMG_0042 (2).jpg`.
 - Names are reduced to their last path component, stripped of control characters and of
-  characters that Windows does not allow, and never start with a dot. An empty result becomes
-  `File`.
+  characters that Windows does not allow, and of leading dots and trailing dots and spaces.
+  Windows device names (`CON`, `NUL`, `COM1` and so on) get a `_` prefix, names longer than
+  200 bytes in UTF-8 are shortened keeping the extension, and an empty result becomes `File`.
 - The modification time of the complete file is set to `modified`.
 
 ## Errors

@@ -61,6 +61,8 @@ add_executable(
     Drop.cpp
     Drop.h
     Resources.qrc
+    Storage.cpp
+    Storage.h
 )
 
 target_include_directories(Drop PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -99,4 +101,13 @@ elseif(LINUX)
         -static-libgcc
         -static-libstdc++
     )
+endif()
+
+# Unit tests are optional and not a part of release packages
+
+option(DROP_BUILD_TESTS "Build unit tests" OFF)
+
+if(DROP_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(Tests)
 endif()
