@@ -204,12 +204,18 @@ any order and in parallel.
 POST /api/session/<sid>/status
 ```
 
-The plaintext is empty. The answer lists the uploads of this server run, so a reloaded page can
-show what is already done:
+The plaintext is empty. The answer lists the uploads of this server run from all devices, so a
+reloaded page can show what is already done:
 
 ```json
-{ "files": [{ "file": "<base64url>", "name": "IMG_0042.jpg", "size": 3145728, "received": 6, "complete": false }] }
+{
+  "chunk": 4194304,
+  "files": [{ "file": "<base64url>", "name": "IMG_0042.jpg", "size": 3145728, "received": 6, "complete": false }]
+}
 ```
+
+`chunk` is the chunk size, as in the announce answer, so the page can tell how much of a file is
+received from the number of chunks.
 
 ## Storage
 

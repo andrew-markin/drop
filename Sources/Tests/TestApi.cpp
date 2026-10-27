@@ -390,7 +390,7 @@ void TestApi::resumeUpload()
 void TestApi::status()
 {
     QByteArray session = openSessionPath();
-    QCOMPARE(call(session + "/status").object, QJsonObject({{"files", QJsonArray()}}));
+    QCOMPARE(call(session + "/status").object, QJsonObject({{"chunk", ChunkSize}, {"files", QJsonArray()}}));
 
     QByteArray file = call(session + "/file", makeAnnounce("a.bin", 6)).object.value("file").toString().toLatin1();
     call(session + "/chunk/" + file + "/0", "0123");
@@ -536,7 +536,7 @@ void TestApi::answersAreSealed()
     QByteArray plaintext;
     QVERIFY(!Crypto::open(session.keys.down, response.body, Crypto::makeAnswerAd(Crypto::randomBytes(24)), &plaintext));
     QVERIFY(Crypto::open(session.keys.down, response.body, Crypto::makeAnswerAd(sealed.left(24)), &plaintext));
-    QCOMPARE(parse(plaintext), QJsonObject({{"files", QJsonArray()}}));
+    QCOMPARE(parse(plaintext), QJsonObject({{"chunk", ChunkSize}, {"files", QJsonArray()}}));
 }
 
 QTEST_GUILESS_MAIN(TestApi)

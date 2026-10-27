@@ -474,5 +474,5 @@ QJsonObject WebServer::getStatus()
         }));
     }
 
-    return QJsonObject({{"files", files}});
+    return QJsonObject({{"chunk", m_uploads->chunkSize()}, {"files", files}});
 }
