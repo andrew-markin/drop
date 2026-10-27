@@ -8,10 +8,12 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QRandomGenerator>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
 
 #include "QrCodeWidget.h"
+#include "Uploads.h"
 #include "WebServer.h"
 
 namespace {
@@ -40,6 +42,9 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
 Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(generateSecret()), m_webServer(nullptr)
 {
     setWindowTitle(PROJECT_TITLE);
+
+    m_uploads = new Uploads(QDir(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)),
+                            Uploads::DefaultChunkSize, this);
 
     m_qrCodeWidget = new QrCodeWidget(this);
 
@@ -149,7 +154,7 @@ void Drop::restartWebServer()
 
     if (index >= 0 && index < m_candidates.size())
     {
-        m_webServer = new WebServer(":/Web", this);
+        m_webServer = new WebServer(":/Web", m_uploads, this);
 
         // A new random port every time, so a busy port is never a problem
         if (m_webServer->start(m_candidates.at(index).address))

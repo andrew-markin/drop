@@ -11,6 +11,7 @@ class QLabel;
 class QPushButton;
 class QTimer;
 class QrCodeWidget;
+class Uploads;
 class WebServer;
 
 class Drop : public QWidget
@@ -31,6 +32,8 @@ private:
 private:
     QByteArray m_secret;
     QList<LocalNetwork::Candidate> m_candidates;
+
+    Uploads* m_uploads;
 
     WebServer* m_webServer;
     QString m_link;

@@ -1,22 +1,10 @@
 #include <QFile>
-#include <QSignalSpy>
-#include <QTcpSocket>
 #include <QTest>
 
+#include "RawHttp.h"
 #include "WebServer.h"
 
-namespace {
-
-static const int ResponseTimeout = 5000; // 5s
-
-struct Response
-{
-    int status = 0;
-    QMap<QByteArray, QByteArray> headers;
-    QByteArray body;
-};
-
-} // namespace
+using RawHttp::Response;
 
 class TestWebServer : public QObject
 {
@@ -50,7 +38,7 @@ private:
 
 void TestWebServer::init()
 {
-    m_server = new WebServer(":/Web", this);
+    m_server = new WebServer(":/Web", nullptr, this);
     QVERIFY2(m_server->start(QHostAddress::LocalHost), qPrintable(m_server->errorString()));
 }
 
@@ -67,56 +55,12 @@ QByteArray TestWebServer::getHost() const
 
 Response TestWebServer::send(const QByteArray& method, const QByteArray& path, const QByteArray& host)
 {
-    // Raw requests, so the test controls the exact path and Host header
-    QTcpSocket socket;
-    socket.connectToHost(QHostAddress::LocalHost, m_server->serverPort());
-
-    Response response;
-
-    if (!socket.waitForConnected(ResponseTimeout))
-    {
-        return response;
-    }
-
-    socket.write(method + " " + path + " HTTP/1.1\r\nHost: " + (host.isNull() ? getHost() : host) +
-                 "\r\nConnection: close\r\n\r\n");
-
-    QByteArray data;
-
-    // The server runs in this thread, so wait with the event loop running
-    QDeadlineTimer deadline(ResponseTimeout);
-
-    while (socket.state() != QAbstractSocket::UnconnectedState && !deadline.hasExpired())
-    {
-        QTest::qWait(10);
-        data.append(socket.readAll());
-    }
-
-    data.append(socket.readAll());
-
-    int headerEnd = data.indexOf("\r\n\r\n");
-
-    if (headerEnd < 0)
-    {
-        return response;
-    }
-
-    QList<QByteArray> lines = data.left(headerEnd).split('\n');
-    response.status = lines.takeFirst().split(' ').value(1).toInt();
-
-    for (const QByteArray& line : lines)
-    {
-        int colon = line.indexOf(':');
-        response.headers.insert(line.left(colon).trimmed().toLower(), line.mid(colon + 1).trimmed());
-    }
-
-    response.body = data.mid(headerEnd + 4);
-    return response;
+    return RawHttp::send(m_server->serverPort(), method, path, host.isNull() ? getHost() : host);
 }
 
 void TestWebServer::listensOnRandomPort()
 {
-    WebServer other(":/Web");
+    WebServer other(":/Web", nullptr);
     QVERIFY(other.start(QHostAddress::LocalHost));
 
     QVERIFY(m_server->serverPort() != 0);

@@ -36,9 +36,25 @@ add_drop_test(
 
 add_drop_test(
     TestWebServer
+    ${PROJECT_SOURCE_DIR}/Storage.cpp
+    ${PROJECT_SOURCE_DIR}/Storage.h
+    ${PROJECT_SOURCE_DIR}/Uploads.cpp
+    ${PROJECT_SOURCE_DIR}/Uploads.h
     ${PROJECT_SOURCE_DIR}/WebServer.cpp
     ${PROJECT_SOURCE_DIR}/WebServer.h
+    RawHttp.h
     TestWebServer.qrc
+)
+
+add_drop_test(
+    TestApi
+    ${PROJECT_SOURCE_DIR}/Storage.cpp
+    ${PROJECT_SOURCE_DIR}/Storage.h
+    ${PROJECT_SOURCE_DIR}/Uploads.cpp
+    ${PROJECT_SOURCE_DIR}/Uploads.h
+    ${PROJECT_SOURCE_DIR}/WebServer.cpp
+    ${PROJECT_SOURCE_DIR}/WebServer.h
+    RawHttp.h
 )
 
 add_drop_test(
