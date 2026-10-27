@@ -23,6 +23,8 @@ set(PROJECT_COPYRIGHT "Copyright (C) ${COPYRIGHT_YEARS} ${PROJECT_DEVELOPER_TITL
 set(PROJECT_GITHUB_REPOSITORY "https://github.com/andrew-markin/drop")
 set(PROJECT_HOME_URL "${PROJECT_GITHUB_REPOSITORY}")
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMake")
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -74,6 +76,9 @@ add_executable(
 )
 
 target_include_directories(Drop PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+include(EmbedWeb)
+embed_web(Drop)
 
 target_link_libraries(
     Drop PRIVATE
