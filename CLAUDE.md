@@ -15,6 +15,11 @@ https://github.com/andrew-markin/mult.
 - Before committing web changes run `npm run lint`, `npm test` and `npm run build` in `Web/`.
 - The desktop build runs `npm ci` (when `package-lock.json` changes) and `npm run build` in `Web/`
   and compiles the result into the `:/Web` resources, so it needs Node.js too.
+- The desktop build needs libsodium 1.0.18 or newer (`libsodium-dev` on Ubuntu) found through
+  pkg-config, or through vcpkg on Windows.
+- Both sides check their cryptography against `docs/vectors/protocol.json`. It is made by
+  `docs/vectors/generate.py` with PyNaCl (`python3-nacl`), a third implementation; run it only
+  when the protocol changes.
 - Before committing desktop changes build with tests and run them:
 
   ```bash
