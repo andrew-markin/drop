@@ -45,5 +45,17 @@ export default defineConfig([
       'import-x/no-nodejs-modules': 'error',
       'vue/html-self-closing': 'off'
     }
+  },
+  {
+    name: 'app/end-to-end-tests',
+    files: ['e2e/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    },
+    rules: {
+      'import-x/no-nodejs-modules': 'off'
+    }
   }
 ])

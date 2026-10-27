@@ -105,3 +105,7 @@ target_link_libraries(DropHeadless PRIVATE DropDefinitions Qt6::Network Qt6::Htt
 if(WIN32)
     target_compile_options(DropHeadless PRIVATE /utf-8 /nologo)
 endif()
+
+# The web client code (Api, Uploader) against the real server, see Web/e2e
+add_test(NAME EndToEnd COMMAND ${NPM_EXECUTABLE} run test:e2e WORKING_DIRECTORY ${WEB_SOURCE_DIR})
+set_tests_properties(EndToEnd PROPERTIES ENVIRONMENT "DROP_HEADLESS=$<TARGET_FILE:DropHeadless>")
