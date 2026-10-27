@@ -1,0 +1,14 @@
+# Builds
+/Builds
+/Release
+
+# Editors
+CMakeLists.txt.user
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Web client
+node_modules/
+dist/
+.eslintcache
