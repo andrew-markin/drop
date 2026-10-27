@@ -90,9 +90,13 @@ void TestWebServer::servesIndex()
 
 void TestWebServer::servesAssets()
 {
+    // Compared with the resource itself: git may check the file out with CRLF line ends on Windows
+    QFile asset(":/Web/assets/app-0123abcd.js");
+    QVERIFY(asset.open(QIODevice::ReadOnly));
+
     Response response = send("GET", "/assets/app-0123abcd.js");
     QCOMPARE(response.status, 200);
-    QCOMPARE(response.body, "console.log(\"app\")\n");
+    QCOMPARE(response.body, asset.readAll());
     QCOMPARE(response.headers.value("content-type"), "text/javascript; charset=utf-8");
     QCOMPARE(response.headers.value("cache-control"), "public, max-age=31536000, immutable");
 
