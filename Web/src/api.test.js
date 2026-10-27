@@ -90,6 +90,12 @@ describe('Api', () => {
     expect(error.retryable).toBe(true)
   })
 
+  it('limits the time of every request', async () => {
+    const fetch = makeFetch(() => respond(200, { session: 'S1' }))
+    await new Api(fetch).openSession()
+    expect(fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal)
+  })
+
   it('tells retryable errors from final ones', () => {
     expect(new ApiError(502).retryable).toBe(true)
     expect(new ApiError(500).retryable).toBe(true)

@@ -1,5 +1,8 @@
 import { toBase64Url } from '@/encoding'
 
+// A request hangs rather than fails when Wi-Fi drops, a chunk takes seconds even on a slow network
+export const RequestTimeout = 60000 // 1m
+
 // Answers that mean a request went wrong for good, see "Errors" in docs/PROTOCOL.md
 export class ApiError extends Error {
   constructor(status) {
@@ -60,10 +63,11 @@ export class Api {
         method: 'POST',
         headers: { 'Content-Type': 'application/octet-stream' },
         body,
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: AbortSignal.timeout(RequestTimeout)
       })
     } catch {
-      throw new ApiError(0) // No connection
+      throw new ApiError(0) // No connection, or no answer in time
     }
     if (!response.ok) throw new ApiError(response.status)
     return response.json()
