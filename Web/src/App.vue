@@ -22,9 +22,20 @@
             :disable="!!state.stopped"
             @click="choose"
           />
-          <input ref="input" type="file" multiple hidden @change="picked" />
+          <input
+            ref="input"
+            type="file"
+            multiple
+            hidden
+            @change="picked"
+            @cancel="preparing = false"
+          />
 
-          <q-banner v-if="state.stopped" rounded class="bg-negative text-white q-mt-md">
+          <q-banner v-if="preparing" rounded class="bg-grey-9 text-accent q-mt-md">
+            <template #avatar><q-spinner size="24px" color="primary" /></template>
+            {{ t.preparing }}
+          </q-banner>
+          <q-banner v-else-if="state.stopped" rounded class="bg-negative text-white q-mt-md">
             {{ t.outOfSpace }}
           </q-banner>
           <q-banner v-else-if="statusError" rounded class="bg-negative text-white q-mt-md">
@@ -160,6 +171,11 @@ const uploader = new Uploader(api, {
 
 const state = shallowRef(snapshot(uploader))
 
+// Between the tap and the files there may be minutes: iOS copies photos out of the library and
+// converts them first, and the page learns nothing until the files are ready. A picker closed
+// without files sends "cancel" where it is supported, older Safari sends nothing.
+const preparing = shallowRef(false)
+
 const earlier = shallowRef([])
 const visibleEarlier = computed(() => withoutPicked(earlier.value, state.value.items))
 const statusError = shallowRef()
@@ -175,10 +191,12 @@ async function loadEarlier() {
 
 function choose() {
   keepAwake(true) // Needs the tap, see awake.js
+  preparing.value = true
   input.value.click()
 }
 
 function picked(event) {
+  preparing.value = false
   const files = [...event.target.files]
   event.target.value = '' // The same files can be picked again
   if (files.length > 0) uploader.add(files)
