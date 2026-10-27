@@ -129,7 +129,8 @@ jobs:
           host: windows
           target: desktop
           arch: win64_msvc2022_64
-          modules: qthttpserver
+          # The official HTTP Server build depends on WebSockets, although the application does not use them
+          modules: qthttpserver qtwebsockets
           cache: true
           # aqtinstall 3.3.0 (the latest release) can't install Qt 6.11+ on Windows, the fix is not released yet:
           # https://github.com/miurahr/aqtinstall/pull/1000. Return to the default when aqtinstall 3.4 is out.
