@@ -1,11 +1,11 @@
-find_package(Qt6 REQUIRED COMPONENTS Test Network)
+find_package(Qt6 REQUIRED COMPONENTS Test Network HttpServer)
 
 # Tests compile the application sources they cover directly, so the application target stays untouched
 function(add_drop_test TEST_NAME)
     add_executable(${TEST_NAME} ${TEST_NAME}.cpp ${ARGN})
 
     target_include_directories(${TEST_NAME} PRIVATE ${PROJECT_SOURCE_DIR})
-    target_link_libraries(${TEST_NAME} PRIVATE DropDefinitions Qt6::Test Qt6::Network)
+    target_link_libraries(${TEST_NAME} PRIVATE DropDefinitions Qt6::Test Qt6::Network Qt6::HttpServer)
 
     if(WIN32)
         target_compile_options(${TEST_NAME} PRIVATE /utf-8 /nologo)
@@ -24,4 +24,11 @@ add_drop_test(
     TestLocalNetwork
     ${PROJECT_SOURCE_DIR}/LocalNetwork.cpp
     ${PROJECT_SOURCE_DIR}/LocalNetwork.h
+)
+
+add_drop_test(
+    TestWebServer
+    ${PROJECT_SOURCE_DIR}/WebServer.cpp
+    ${PROJECT_SOURCE_DIR}/WebServer.h
+    TestWebServer.qrc
 )

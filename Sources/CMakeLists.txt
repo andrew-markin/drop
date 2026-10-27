@@ -69,6 +69,8 @@ add_executable(
     Resources.qrc
     Storage.cpp
     Storage.h
+    WebServer.cpp
+    WebServer.h
 )
 
 target_include_directories(Drop PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -78,6 +80,7 @@ target_link_libraries(
     DropDefinitions
     Qt6::Widgets
     Qt6::Network
+    Qt6::HttpServer
 )
 
 if (WIN32)

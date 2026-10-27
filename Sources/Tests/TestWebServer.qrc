@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Web/index.html</file>
+        <file>Web/favicon.svg</file>
+        <file>Web/assets/app-0123abcd.js</file>
+    </qresource>
+</RCC>
