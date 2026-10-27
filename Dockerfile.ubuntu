@@ -1,0 +1,226 @@
+# Ubuntu 22.04 is the oldest LTS that provides Qt 6.11.2 compatibility.
+# Building here maximizes forward compatibility with newer distros.
+# =============================================================================
+# Stage "base": System packages shared by Qt build and the final image
+# =============================================================================
+FROM ubuntu:22.04 AS base
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+ENV QT_PREFIX="/usr/local/qt"
+
+# -----------------------------------------------------------------------------
+# Stage: Base build tools
+# -----------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    fakeroot \
+    file \
+    git \
+    ninja-build \
+    patchelf \
+    perl \
+    python3 \
+    python3-pip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------
+# Stage: Qt GUI dependencies (X11 + font rendering)
+# -----------------------------------------------------------------------------
+# The application always uses the XCB platform plugin (QT_QPA_PLATFORM=xcb),
+# so neither Wayland nor OpenGL libraries are needed.
+RUN apt-get update && apt-get install -y \
+    fontconfig \
+    libdbus-1-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libglib2.0-dev \
+    libgtk-3-dev \
+    libice-dev \
+    libsm-dev \
+    libx11-dev \
+    libx11-xcb-dev \
+    libxcb-cursor-dev \
+    libxcb-icccm4-dev \
+    libxcb-image0-dev \
+    libxcb-keysyms1-dev \
+    libxcb-randr0-dev \
+    libxcb-render-util0-dev \
+    libxcb-render0-dev \
+    libxcb-shape0-dev \
+    libxcb-shm0-dev \
+    libxcb-sync-dev \
+    libxcb-util-dev \
+    libxcb-xfixes0-dev \
+    libxcb-xinerama0-dev \
+    libxcb-xkb-dev \
+    libxcb1-dev \
+    libxext-dev \
+    libxkbcommon-dev \
+    libxkbcommon-x11-dev \
+    pkg-config \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------
+# Stage: Cryptography library
+# -----------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y \
+    libsodium-dev \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------
+# Stage: Node.js to build the web client embedded into the application
+# -----------------------------------------------------------------------------
+# Distribution packages are too old, so the official build is installed
+ENV NODE_VERSION=24.21.0
+# From https://nodejs.org/dist/v24.21.0/SHASUMS256.txt
+ENV NODE_SHA256SUM=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
+
+RUN apt-get update && apt-get install -y wget xz-utils && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* && \
+    wget "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
+         --progress=dot:giga -O node.tar.xz --tries=10 --waitretry=10 && \
+    echo "$NODE_SHA256SUM  node.tar.xz" | sha256sum -c - && \
+    tar -xf node.tar.xz -C /usr/local --strip-components=1 --no-same-owner && \
+    rm node.tar.xz
+
+# Upgrade CMake to a version recent enough for Qt 6.11+
+# (system cmake on Ubuntu 22.04 is too old)
+RUN pip3 install --upgrade cmake
+
+# =============================================================================
+# Stage "qt": Build Qt from sources (sources and build files stay in this stage)
+# =============================================================================
+FROM base AS qt
+
+# Mirror for Qt sources: Yandex is faster for local builds, CI passes the official
+# download server with --build-arg QT_MIRROR=https://download.qt.io
+ARG QT_MIRROR=https://mirror.yandex.ru/mirrors/qt.io
+ENV QT_ARCHIVE_PATH=/archive/qt/6.11/6.11.2/single/qt-everywhere-src-6.11.2.tar.xz
+# SHA-256 is not listed by Qt, but download.qt.io returns it for <archive URL>.sha256
+ENV QT_ARCHIVE_SHA256SUM=6dcfbca271d76a6502741a2c0dc6fc98ef7dd0b7b4cfd0abcebb285a86a26f33
+
+# -----------------------------------------------------------------------------
+# Stage: Download Qt source tarball from a reliable mirror
+# -----------------------------------------------------------------------------
+WORKDIR /qt
+
+# Mirror servers are not always in sync and may answer 404 now and then, so the download is retried
+RUN apt-get update && apt-get install -y wget xz-utils && \
+    wget "$QT_MIRROR/$QT_ARCHIVE_PATH" --progress=dot:giga -O sources.tar.xz \
+         --tries=10 --waitretry=10 --retry-on-http-error=404,429,500,502,503,504 && \
+    echo "$QT_ARCHIVE_SHA256SUM  sources.tar.xz" | sha256sum -c - && \
+    mkdir sources && \
+    tar -xf sources.tar.xz -C sources --strip-components=1 \
+        --checkpoint=1000 --checkpoint-action=dot && \
+    rm sources.tar.xz
+
+# -----------------------------------------------------------------------------
+# Stage: Configure Qt (shadow build outside source tree)
+# -----------------------------------------------------------------------------
+WORKDIR /qt/build
+
+# Configure with minimal set of modules to reduce build time.
+# We keep only what is strictly necessary:
+#   qtbase       – core + GUI + widgets + network + D-Bus
+#   qtsvg        – SVG icons support
+#   qthttpserver – HTTP server the web client is served by
+#
+# Image formats other than built-in PNG and the Wayland platform plugin are not deployed
+# with the application, so qtimageformats and qtwayland are skipped too.
+#
+# Most other modules are skipped to keep the image small and build fast.
+# If you need additional modules, remove the corresponding `-skip` lines.
+RUN ../sources/configure \
+    -opensource \
+    -confirm-license \
+    -release \
+    -optimize-size \
+    -ltcg \
+    -no-icu \
+    -xcb \
+    \
+    # Not used by the application: widgets are rendered without OpenGL, there are
+    # no TLS connections and no compressed HTTP downloads (fewer runtime dependencies)
+    -no-opengl \
+    -no-openssl \
+    -no-feature-brotli \
+    \
+    # Disable heavy / non‑essential modules
+    -skip qt3d \
+    -skip qt5compat \
+    -skip qtactiveqt \
+    -skip qtcanvaspainter \
+    -skip qtcharts \
+    -skip qtcoap \
+    -skip qtconnectivity \
+    -skip qtdatavis3d \
+    -skip qtdeclarative \
+    -skip qtdoc \
+    -skip qtgraphs \
+    -skip qtgrpc \
+    -skip qtimageformats \
+    -skip qtlanguageserver \
+    -skip qtlocation \
+    -skip qtlottie \
+    -skip qtmqtt \
+    -skip qtmultimedia \
+    -skip qtnetworkauth \
+    -skip qtopcua \
+    -skip qtopenapi \
+    -skip qtpositioning \
+    -skip qtquick3d \
+    -skip qtquick3dphysics \
+    -skip qtquickeffectmaker \
+    -skip qtquicktimeline \
+    -skip qtremoteobjects \
+    -skip qtscxml \
+    -skip qtsensors \
+    -skip qtserialbus \
+    -skip qtserialport \
+    -skip qtshadertools \
+    -skip qtspeech \
+    -skip qttasktree \
+    -skip qttools \
+    -skip qttranslations \
+    -skip qtvirtualkeyboard \
+    -skip qtwebchannel \
+    -skip qtwebengine \
+    -skip qtwebsockets \
+    -skip qtwayland \
+    -skip qtwebview \
+    \
+    # Disable rarely‑used features to reduce binary size
+    -no-feature-printer \
+    -no-feature-pdf \
+    -no-feature-sql \
+    -no-feature-vulkan \
+    \
+    # Skip building non-essential categories
+    -nomake examples \
+    -nomake tests \
+    \
+    # Set install prefix
+    -prefix $QT_PREFIX \
+    -- \
+    -G Ninja
+
+# -----------------------------------------------------------------------------
+# Stage: Build and install only the required modules
+# -----------------------------------------------------------------------------
+# We explicitly list targets we need – this is faster than building 'all'.
+# Sources and build directories are left behind in this stage and never reach the final image.
+RUN cmake --build . --target qtbase qtsvg qthttpserver --parallel $(nproc) && \
+    cmake --install . --strip
+
+# =============================================================================
+# Final stage: Build dependencies and installed Qt only
+# =============================================================================
+FROM base
+
+COPY --from=qt $QT_PREFIX $QT_PREFIX
+
+# Add Qt binaries to PATH for subsequent RUN commands (e.g., qmake, moc)
+ENV PATH="$QT_PREFIX/bin:$PATH"
