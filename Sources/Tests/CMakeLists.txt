@@ -107,5 +107,11 @@ if(WIN32)
 endif()
 
 # The web client code (Api, Uploader) against the real server, see Web/e2e
-add_test(NAME EndToEnd COMMAND ${NPM_EXECUTABLE} run test:e2e WORKING_DIRECTORY ${WEB_SOURCE_DIR})
+if(WIN32)
+    # npm is a batch file there, which only the command interpreter runs
+    add_test(NAME EndToEnd COMMAND cmd /c ${NPM_EXECUTABLE} run test:e2e WORKING_DIRECTORY ${WEB_SOURCE_DIR})
+else()
+    add_test(NAME EndToEnd COMMAND ${NPM_EXECUTABLE} run test:e2e WORKING_DIRECTORY ${WEB_SOURCE_DIR})
+endif()
+
 set_tests_properties(EndToEnd PROPERTIES ENVIRONMENT "DROP_HEADLESS=$<TARGET_FILE:DropHeadless>")

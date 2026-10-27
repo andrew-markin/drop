@@ -5,6 +5,13 @@
 find_package(unofficial-sodium CONFIG QUIET)
 
 if(TARGET unofficial-sodium::sodium)
+    get_target_property(SODIUM_TARGET_TYPE unofficial-sodium::sodium TYPE)
+
+    # Headers of a static libsodium must not declare its functions as imported from a DLL
+    if(SODIUM_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
+        set_property(TARGET unofficial-sodium::sodium APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS SODIUM_STATIC)
+    endif()
+
     add_library(Sodium::Sodium ALIAS unofficial-sodium::sodium)
     set(Sodium_FOUND TRUE)
     return()
