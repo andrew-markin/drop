@@ -156,8 +156,10 @@ POST /api/session/<sid>/file
 
 - `name` is the file name as the browser reports it. The server never trusts it as a path.
 - `size` is in bytes, `modified` is milliseconds since the Unix epoch (`File.lastModified`).
-- `head` is `BLAKE2b-256` of the first chunk (or the whole file if it is shorter), so a resumed
-  upload can be matched to the same file even if it was picked again after a page reload.
+- `head` is `BLAKE2b-256` (unkeyed) of the first MiB of the file (or of the whole file if it is
+  shorter), so a resumed upload can be matched to the same file even if it was picked again after
+  a page reload. It does not depend on the chunk size, which the client learns only from the
+  answer.
 
 The answer:
 
