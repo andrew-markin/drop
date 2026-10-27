@@ -4,7 +4,7 @@
 your computer over the local network. No cables, no cloud, no internet access, and nothing to
 install on the phone: scan a QR code and pick the files.
 
-## ✨ Features
+## Features
 
 - **Nothing to install on devices:** the computer serves a small web page, any modern browser
   sends files from it.
@@ -13,12 +13,12 @@ install on the phone: scan a QR code and pick the files.
 - **Survives a flaky network:** lost connections are retried, and a reloaded page continues
   where it stopped once the same files are picked again.
 - **Encrypted end to end:** the link carries a one-time secret that never travels over the
-  network, see [Security](#-security).
+  network, see [Security](#security).
 - **Tidy results:** every drop goes to a folder of its own in Downloads, `Drop-YYYY-MM-DD-N`,
   files keep their names and modification times.
 - **Progress on both sides:** the page and the window of the application show what is sent.
 
-## 🚀 How to Use
+## How to Use
 
 1. Start **Drop** on the computer. It shows a QR code and the address it listens at.
 2. Scan the QR code with a phone connected to the same Wi-Fi or wired network. To send the link
@@ -30,7 +30,7 @@ install on the phone: scan a QR code and pick the files.
 Every start of Drop is a new drop: a new folder, a new address and a new secret, so links from
 earlier starts stop working.
 
-## 🔒 Security
+## Security
 
 The page is served over plain HTTP, the only way a phone browser can reach a computer on the
 local network without warnings, so Drop encrypts everything itself:
@@ -47,7 +47,7 @@ The page itself still comes over plain HTTP, so an active attacker on the same n
 replace it. Use Drop on networks you trust, such as your home Wi-Fi. The protocol is described in
 [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
-## 💻 System Requirements
+## System Requirements
 
 - **Windows:** Windows 10 / 11 (64-bit)
 - **Linux (DEB-based):** Ubuntu 22.04 or newer, Debian 12 or newer, and other compatible
@@ -56,7 +56,7 @@ replace it. Use Drop on networks you trust, such as your home Wi-Fi. The protoco
 - **Devices that send files:** any modern browser, such as Safari on iPhone and iPad or Chrome
   on Android
 
-## 📦 Installation
+## Installation
 
 Choose the package for your operating system in the **[Releases](../../releases)** section.
 
@@ -94,7 +94,7 @@ your package and check that the package was not altered:
 
       Get-FileHash .\Drop-*.exe -Algorithm SHA256
 
-## 🛠️ Building from Sources
+## Building from Sources
 
 You need Qt 6.11 with the HTTP Server module, libsodium 1.0.18 or newer, Node.js 22 or newer and
 CMake. Packages are built the same way as in CI:
@@ -107,6 +107,6 @@ CMake. Packages are built the same way as in CI:
 
 Packages appear in the `Release` folder.
 
-## 📄 License
+## License
 
 Drop is distributed under the GNU General Public License v3.0, see [LICENSE](LICENSE).
