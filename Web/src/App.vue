@@ -22,7 +22,7 @@
             :disable="!!state.stopped"
             @click="choose"
           />
-          <input ref="input" type="file" multiple hidden :accept="accept" @change="picked" />
+          <input ref="input" type="file" multiple hidden @change="picked" />
 
           <q-banner v-if="state.stopped" rounded class="bg-negative text-white q-mt-md">
             {{ t.outOfSpace }}
@@ -132,16 +132,6 @@ const { locale, t } = useI18n()
 const size = (value) => formatSize(value, locale.value)
 
 const secret = readSecret(location.hash)
-
-// An experiment to find what makes iOS hand over photos and videos as they are, without
-// converting them first: add ?accept=<variant> to the link. Remove once settled.
-const acceptVariants = {
-  heic: 'image/heic,image/heif,image/*,video/*,*/*',
-  hevc: 'image/heic,image/heif,video/quicktime,video/mp4,*/*',
-  media: 'image/*,video/*',
-  any: '*/*'
-}
-const accept = acceptVariants[new URLSearchParams(location.search).get('accept')]
 const input = useTemplateRef('input')
 
 const snapshot = (uploader) => ({
