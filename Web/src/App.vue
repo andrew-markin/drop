@@ -8,7 +8,7 @@
         </div>
 
         <div v-if="!secret" class="col column flex-center text-center text-body1 text-warning">
-          The link is incomplete. Scan the QR code shown by Drop on the computer again.
+          {{ t.linkIncomplete }}
         </div>
 
         <template v-else>
@@ -17,29 +17,28 @@
             color="primary"
             size="lg"
             icon="add_photo_alternate"
-            label="Choose Files"
+            :label="t.chooseFiles"
             :disable="!!state.stopped"
             @click="choose"
           />
           <input ref="input" type="file" multiple hidden @change="picked" />
 
           <q-banner v-if="state.stopped" rounded class="bg-negative text-white q-mt-md">
-            The computer is out of disk space. Free some space and reload this page.
+            {{ t.outOfSpace }}
           </q-banner>
           <q-banner v-else-if="statusError" rounded class="bg-negative text-white q-mt-md">
             {{ describeError(statusError) }}.
           </q-banner>
           <q-banner v-else-if="state.offline" rounded class="bg-warning text-white q-mt-md">
             <template #avatar><q-spinner size="24px" /></template>
-            The connection is lost, trying again. Check that this device is on the same network as
-            the computer.
+            {{ t.connectionLost }}
           </q-banner>
 
           <div v-if="state.items.length > 0" class="q-mt-lg">
             <div class="row items-baseline justify-between text-body2">
-              <div>{{ state.doneCount }} of {{ state.items.length }} files sent</div>
+              <div>{{ t.filesSent(state.doneCount, state.items.length) }}</div>
               <div class="text-caption">
-                {{ formatSize(state.sentSize) }} of {{ formatSize(state.totalSize) }}
+                {{ t.sizeOf(size(state.sentSize), size(state.totalSize)) }}
               </div>
             </div>
             <q-linear-progress
@@ -51,7 +50,7 @@
               :value="state.totalSize > 0 ? state.sentSize / state.totalSize : 1"
             />
             <div v-if="state.busy" class="text-caption text-grey-5 q-mt-sm">
-              Keep this page open until all files are sent.
+              {{ t.keepOpen }}
             </div>
           </div>
 
@@ -63,7 +62,7 @@
                   <template v-if="item.status === 'failed'">{{
                     describeError(item.error)
                   }}</template>
-                  <template v-else>{{ formatSize(item.size) }}</template>
+                  <template v-else>{{ size(item.size) }}</template>
                 </q-item-label>
                 <q-linear-progress
                   v-if="item.status === 'uploading' || item.status === 'preparing'"
@@ -85,16 +84,15 @@
           </q-list>
 
           <template v-if="visibleEarlier.length > 0">
-            <div class="text-body2 q-mt-lg">Already on the computer</div>
+            <div class="text-body2 q-mt-lg">{{ t.alreadyOnComputer }}</div>
             <q-list dense class="q-mt-sm">
               <q-item v-for="(file, index) in visibleEarlier" :key="index" class="q-px-none">
                 <q-item-section>
                   <q-item-label lines="1">{{ file.name }}</q-item-label>
                   <q-item-label caption>
-                    <template v-if="file.complete">{{ formatSize(file.size) }}</template>
+                    <template v-if="file.complete">{{ size(file.size) }}</template>
                     <template v-else>
-                      {{ formatSize(file.sent) }} of {{ formatSize(file.size) }}, pick it again to
-                      continue
+                      {{ t.pickAgain(size(file.sent), size(file.size)) }}
                     </template>
                   </q-item-label>
                 </q-item-section>
@@ -110,7 +108,7 @@
             v-if="state.items.length === 0 && visibleEarlier.length === 0"
             class="col column flex-center text-center text-grey-5 q-pa-lg"
           >
-            Photos, videos and any other files go to the Downloads folder of the computer.
+            {{ t.emptyHint }}
           </div>
         </template>
       </q-page>
@@ -125,8 +123,12 @@ import { Api } from '@/api'
 import { keepAwake } from '@/awake'
 import { readEarlier, withoutPicked } from '@/earlier'
 import { formatSize } from '@/format'
+import { useI18n } from '@/i18n'
 import { readSecret } from '@/link'
 import { Uploader } from '@/uploader'
+
+const { locale, t } = useI18n()
+const size = (value) => formatSize(value, locale.value)
 
 const secret = readSecret(location.hash)
 const input = useTemplateRef('input')
@@ -183,10 +185,10 @@ function picked(event) {
 }
 
 function describeError(error) {
-  if (error?.status === 507) return 'The computer is out of disk space'
-  if (error?.status === 401) return 'The link is wrong, scan the QR code again'
-  if (error?.status === 404) return 'Drop on the computer was restarted, scan the QR code again'
-  return 'Not sent, something went wrong'
+  if (error?.status === 507) return t.value.errorNoSpace
+  if (error?.status === 401) return t.value.errorWrongLink
+  if (error?.status === 404) return t.value.errorRestarted
+  return t.value.errorOther
 }
 
 // Leaving the page in the middle of an upload loses the picked files
