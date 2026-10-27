@@ -64,3 +64,12 @@ add_drop_test(
 )
 
 target_link_libraries(TestQrCodeWidget PRIVATE Qt6::Widgets QrCodeGen)
+
+add_drop_test(
+    TestCrypto
+    ${PROJECT_SOURCE_DIR}/Crypto.cpp
+    ${PROJECT_SOURCE_DIR}/Crypto.h
+)
+
+target_link_libraries(TestCrypto PRIVATE Sodium::Sodium)
+target_compile_definitions(TestCrypto PRIVATE DROP_VECTORS_PATH="${PROJECT_SOURCE_DIR}/../docs/vectors/protocol.json")

@@ -56,6 +56,10 @@ target_compile_definitions(
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network HttpServer)
 
+# Third party libraries
+
+find_package(Sodium REQUIRED)
+
 # Bundled third party libraries
 
 add_subdirectory(ThirdParty/QrCodeGen)
@@ -64,6 +68,8 @@ add_subdirectory(ThirdParty/QrCodeGen)
 
 add_executable(
     Drop WIN32
+    Crypto.cpp
+    Crypto.h
     Drop.cpp
     Drop.h
     LocalNetwork.cpp
@@ -91,6 +97,7 @@ target_link_libraries(
     Qt6::Network
     Qt6::HttpServer
     QrCodeGen
+    Sodium::Sodium
 )
 
 if (WIN32)
