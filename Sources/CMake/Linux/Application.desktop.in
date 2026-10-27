@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=@DESKTOP_NAME@
+Version=@PROJECT_VERSION@
+Comment=@DESKTOP_COMMENT@
+Categories=@DESKTOP_CATEGORIES@
+Icon=@DESKTOP_ICON@
+Exec=@DESKTOP_APPLICATION_EXEC@
+Terminal=false

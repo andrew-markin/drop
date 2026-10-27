@@ -1,0 +1,49 @@
+find_program(PATCHELF_EXECUTABLE "patchelf")
+
+if(NOT PATCHELF_EXECUTABLE)
+    message(WARNING "Executable 'patchelf' not found. RPATH for installed libraries will not be fixed.")
+    return()
+endif()
+
+message(STATUS "Fixing RPATH for installed libraries using patchelf...")
+
+file(
+    GLOB_RECURSE INSTALLED_LIBRARIES
+    "${CMAKE_INSTALL_PREFIX}/@PROJECT_BINARIES_DEST_DIR@/*@CMAKE_SHARED_LIBRARY_SUFFIX@*"
+)
+
+foreach(INSTALLED_LIBRARY ${INSTALLED_LIBRARIES})
+    execute_process(
+        COMMAND ${PATCHELF_EXECUTABLE} --print-rpath "${INSTALLED_LIBRARY}"
+        OUTPUT_VARIABLE CURRENT_RPATH
+        ERROR_QUIET
+    )
+    string(STRIP "${CURRENT_RPATH}" CURRENT_RPATH)
+    
+    if(CURRENT_RPATH STREQUAL "")
+        continue()
+    endif()
+
+    get_filename_component(INSTALLED_LIBRARY_PATH ${INSTALLED_LIBRARY} PATH)
+    get_filename_component(INSTALLED_LIBRARY_NAME ${INSTALLED_LIBRARY} NAME)
+
+    file(
+        RELATIVE_PATH ORIGIN_RELATIVE_PATH 
+        "${INSTALLED_LIBRARY_PATH}"
+        "${CMAKE_INSTALL_PREFIX}/@PROJECT_BINARIES_DEST_DIR@"
+    )
+
+    set(FIXED_RPATH "$ORIGIN/${ORIGIN_RELATIVE_PATH}")
+
+    execute_process(
+        COMMAND ${PATCHELF_EXECUTABLE} --set-rpath "${FIXED_RPATH}" --force-rpath "${INSTALLED_LIBRARY}"
+        RESULT_VARIABLE RESULT
+        ERROR_QUIET
+    )
+    
+    if(RESULT EQUAL 0)
+        message(STATUS "RPATH fixed for: ${INSTALLED_LIBRARY_NAME}")
+    else()
+        message(WARNING "Failed to fix RPATH for: ${INSTALLED_LIBRARY_NAME}")
+    endif()
+endforeach()

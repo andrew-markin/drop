@@ -1,0 +1,68 @@
+#!/bin/bash -e
+
+echo "Building DEB package..."
+
+PACKAGE_DIR=$1
+PROJECT_BUILD_DIR=@PROJECT_BINARY_DIR@
+PACKAGE_FILE_NAME="@DEB_PACKAGE_NAME@-@DEB_PACKAGE_VERSION@-@DEB_PACKAGE_ARCH@.deb"
+PACKAGE_POSTINSTALL="@DEB_PACKAGE_POSTINSTALL@"
+PACKAGE_POSTREMOVE="@DEB_PACKAGE_POSTREMOVE@"
+PACKAGE_ASSEMBLY_DIR="$PROJECT_BUILD_DIR/DEBAssembly"
+PACKAGE_DEBIAN_DIR="$PACKAGE_ASSEMBLY_DIR/DEBIAN"
+OUTPUT_DIR="$PROJECT_BUILD_DIR/Output"
+
+cp -R "$PACKAGE_DIR" "$PACKAGE_ASSEMBLY_DIR"
+mkdir "$PACKAGE_DEBIAN_DIR"
+mkdir -p "$OUTPUT_DIR"
+
+# Detect shared library dependencies of all ELF files in the package (as rpmbuild does for RPM).
+# Bundled Qt libraries are private, so dpkg-shlibdeps is told where they are and not to look for their packages.
+ELF_FILES=()
+PRIVATE_LIBRARY_DIRS=()
+
+while IFS= read -r -d '' FILE; do
+    if file -b "$FILE" | grep -q '^ELF'; then
+        ELF_FILES+=("$FILE")
+        PRIVATE_LIBRARY_DIRS+=("-l$(dirname "$FILE")")
+    fi
+done < <(find "$PACKAGE_ASSEMBLY_DIR" -type f -print0)
+
+SHLIBDEPS_DIR="$PROJECT_BUILD_DIR/DEBShlibdeps"
+mkdir -p "$SHLIBDEPS_DIR/debian"
+printf "Source: @DEB_PACKAGE_NAME@\n\nPackage: @DEB_PACKAGE_NAME@\nArchitecture: any\n" > "$SHLIBDEPS_DIR/debian/control"
+
+SHLIBS_DEPENDS=$(cd "$SHLIBDEPS_DIR" && \
+    dpkg-shlibdeps -O --ignore-missing-info $(printf '%s\n' "${PRIVATE_LIBRARY_DIRS[@]}" | sort -u) \
+    "${ELF_FILES[@]}" 2> >(grep -v "no dependency information found" >&2))
+SHLIBS_DEPENDS=${SHLIBS_DEPENDS#shlibs:Depends=}
+
+if [ -z "$SHLIBS_DEPENDS" ]; then
+    echo "Unable to detect shared library dependencies" >&2
+    exit 1
+fi
+
+echo "Detected dependencies: $SHLIBS_DEPENDS"
+
+cat <<EOF > "$PACKAGE_DEBIAN_DIR/control"
+Package: @DEB_PACKAGE_NAME@
+Version: @DEB_PACKAGE_VERSION@
+Section: @DEB_PACKAGE_SECTION@
+Architecture: @DEB_PACKAGE_ARCH@
+Depends: $SHLIBS_DEPENDS
+Maintainer: @DEB_PACKAGE_MAINTAINER@
+Description: @DEB_PACKAGE_DESCRIPTION@
+Origin: @DEB_PACKAGE_URL@
+Installed-Size: $(du -sk --apparent-size "$PACKAGE_DIR" | awk '{print $1}')
+EOF
+
+if [ -n "$PACKAGE_POSTINSTALL" ] && [ -f "$PACKAGE_POSTINSTALL" ]; then
+    cp "$PACKAGE_POSTINSTALL" "$PACKAGE_DEBIAN_DIR/postinst"
+    chmod 0755 "$PACKAGE_DEBIAN_DIR/postinst"
+fi
+
+if [ -n "$PACKAGE_POSTREMOVE" ] && [ -f "$PACKAGE_POSTREMOVE" ]; then
+    cp "$PACKAGE_POSTREMOVE" "$PACKAGE_DEBIAN_DIR/postrm"
+    chmod 0755 "$PACKAGE_DEBIAN_DIR/postrm"
+fi
+
+fakeroot dpkg-deb --verbose -Zxz -z9 --build "$PACKAGE_ASSEMBLY_DIR" "$OUTPUT_DIR/$PACKAGE_FILE_NAME"

@@ -60,6 +60,10 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Network HttpServer)
 
 find_package(Sodium REQUIRED)
 
+get_filename_component(QT_BINARY_DIR "${QT6_INSTALL_PREFIX}/bin" ABSOLUTE)
+get_filename_component(QT_LIBRARY_DIR "${QT6_INSTALL_PREFIX}/lib" ABSOLUTE)
+get_filename_component(QT_PLUGINS_DIR "${QT6_INSTALL_PREFIX}/plugins" ABSOLUTE)
+
 # Bundled third party libraries
 
 add_subdirectory(ThirdParty/QrCodeGen)
@@ -89,6 +93,25 @@ target_include_directories(Drop PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(EmbedWeb)
 embed_web(Drop)
+
+if(WIN32)
+    set(PROJECT_ICON "Drop.ico")
+
+    # Configure executable resources
+
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/Drop.rc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Drop.rc
+        @ONLY
+    )
+
+    target_sources(
+        Drop PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/Drop.rc
+    )
+elseif(LINUX)
+    set(PROJECT_ICON "Drop.png")
+endif()
 
 target_link_libraries(
     Drop PRIVATE
@@ -137,3 +160,5 @@ if(DROP_BUILD_TESTS)
     enable_testing()
     add_subdirectory(Tests)
 endif()
+
+include(Deploy)

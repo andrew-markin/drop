@@ -1,0 +1,54 @@
+#!/bin/bash -e
+
+echo "Building RPM package..."
+
+PACKAGE_DIR=$1
+PROJECT_BUILD_DIR=@PROJECT_BINARY_DIR@
+PACKAGE_FILE_NAME="@RPM_PACKAGE_NAME@-@RPM_PACKAGE_VERSION@-@RPM_PACKAGE_RELEASE@.@RPM_PACKAGE_ARCH@.rpm"
+PACKAGE_ASSEMBLY_DIR="$PROJECT_BUILD_DIR/RPMAssembly"
+PACKAGE_BUILD_DIR="$PACKAGE_ASSEMBLY_DIR/RPMBUILD"
+OUTPUT_DIR="$PROJECT_BUILD_DIR/Output"
+
+mkdir "$PACKAGE_ASSEMBLY_DIR"
+mkdir "$PACKAGE_BUILD_DIR"
+mkdir "$PACKAGE_BUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+cp -R "$PACKAGE_DIR" "$PACKAGE_BUILD_DIR/BUILDROOT"
+mkdir -p "$OUTPUT_DIR"
+
+cat <<EOF > "$PACKAGE_ASSEMBLY_DIR/package.spec"
+Name: @RPM_PACKAGE_NAME@
+Summary: @RPM_PACKAGE_SUMMARY@
+Version: @RPM_PACKAGE_VERSION@
+Release: @RPM_PACKAGE_RELEASE@
+License: @RPM_PACKAGE_LICENSE@
+Group: @RPM_PACKAGE_GROUP@
+URL: @RPM_PACKAGE_URL@
+Packager: @RPM_PACKAGER@
+BuildArch: @RPM_PACKAGE_ARCH@
+
+%description
+@RPM_PACKAGE_DESCRIPTION@
+
+%post
+update-desktop-database /usr/share/applications 2>/dev/null || :
+update-mime-database /usr/share/mime 2>/dev/null || :
+gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || :
+exit 0
+
+%postun
+if [ \$1 -eq 0 ]; then
+    update-desktop-database /usr/share/applications 2>/dev/null || :
+    update-mime-database /usr/share/mime 2>/dev/null || :
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || :
+fi
+exit 0
+
+%files
+%defattr(-,root,root)
+/*
+EOF
+
+rpmbuild -D "_topdir $PACKAGE_BUILD_DIR" -D"buildroot %{_buildrootdir}" \
+         -D "_rpmdir $OUTPUT_DIR" -D "_rpmfilename $PACKAGE_FILE_NAME" \
+         -D "_binary_payload w9.xzdio" --noclean \
+         -bb "$PACKAGE_ASSEMBLY_DIR/package.spec"
