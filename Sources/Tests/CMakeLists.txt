@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS Test Network HttpServer)
+find_package(Qt6 REQUIRED COMPONENTS Test Network HttpServer Widgets)
 
 # Tests compile the application sources they cover directly, so the application target stays untouched
 function(add_drop_test TEST_NAME)
@@ -32,3 +32,11 @@ add_drop_test(
     ${PROJECT_SOURCE_DIR}/WebServer.h
     TestWebServer.qrc
 )
+
+add_drop_test(
+    TestQrCodeWidget
+    ${PROJECT_SOURCE_DIR}/QrCodeWidget.cpp
+    ${PROJECT_SOURCE_DIR}/QrCodeWidget.h
+)
+
+target_link_libraries(TestQrCodeWidget PRIVATE Qt6::Widgets QrCodeGen)

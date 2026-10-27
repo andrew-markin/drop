@@ -68,6 +68,8 @@ add_executable(
     Drop.h
     LocalNetwork.cpp
     LocalNetwork.h
+    QrCodeWidget.cpp
+    QrCodeWidget.h
     Resources.qrc
     Storage.cpp
     Storage.h
@@ -86,6 +88,7 @@ target_link_libraries(
     Qt6::Widgets
     Qt6::Network
     Qt6::HttpServer
+    QrCodeGen
 )
 
 if (WIN32)
