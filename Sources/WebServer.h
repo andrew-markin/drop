@@ -25,6 +25,9 @@ public:
     QHostAddress serverAddress() const;
     quint16 serverPort() const;
 
+signals:
+    void requestReceived();
+
 protected:
     bool handleRequest(const QHttpServerRequest& request, QHttpServerResponder& responder) override;
     void missingHandler(const QHttpServerRequest& request, QHttpServerResponder& responder) override;

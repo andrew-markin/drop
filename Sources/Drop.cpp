@@ -35,6 +35,9 @@ static const int CopiedFeedbackTimeout = 1500; // 1.5s
 // complete between files for a moment. The drop is over when it stays so for a while.
 static const int CompleteQuietTimeout = 5000; // 5s
 
+// Long enough to scan the QR code and for the page to load
+static const int ConnectionHintTimeout = 60000; // 1m
+
 enum UploadColumn
 {
     UploadNameColumn,
@@ -50,7 +53,8 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
 } // namespace
 
 Drop::Drop(QWidget* parent)
-    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_notifiedCount(0)
+    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_requestReceived(false),
+      m_notifiedCount(0)
 {
     setWindowTitle(PROJECT_TITLE);
 
@@ -115,6 +119,11 @@ Drop::Drop(QWidget* parent)
         raise();
         activateWindow();
     });
+
+    m_hintTimer = new QTimer(this);
+    m_hintTimer->setSingleShot(true);
+    m_hintTimer->setInterval(ConnectionHintTimeout);
+    connect(m_hintTimer, &QTimer::timeout, this, &Drop::showConnectionHint);
 
     m_completeTimer = new QTimer(this);
     m_completeTimer->setSingleShot(true);
@@ -217,6 +226,14 @@ void Drop::restartWebServer()
     {
         m_webServer = new WebServer(":/Web", m_uploads, m_secret, this);
 
+        connect(m_webServer, &WebServer::requestReceived, this, [this]() {
+            if (!m_requestReceived)
+            {
+                m_requestReceived = true;
+                updateStatus();
+            }
+        });
+
         // A new random port every time, so a busy port is never a problem
         if (m_webServer->start(m_candidates.at(index).address))
         {
@@ -225,6 +242,23 @@ void Drop::restartWebServer()
     }
 
     updateStatus();
+}
+
+void Drop::showConnectionHint()
+{
+    if (m_requestReceived || m_link.isEmpty())
+    {
+        return;
+    }
+
+#if defined(Q_OS_WINDOWS)
+    m_statusLabel->setText(tr("The page does not open on the phone? Make sure the network is marked as private in "
+                              "Windows Settings, Network & internet: Windows Firewall lets devices connect to Drop "
+                              "on private networks only."));
+#else
+    m_statusLabel->setText(tr("The page does not open on the phone? Make sure it is on the same network as this "
+                              "computer, and that the firewall allows incoming connections."));
+#endif
 }
 
 void Drop::copyLink()
@@ -347,6 +381,11 @@ void Drop::updateStatus()
         m_addressLabel->setText(QString("http://%1:%2").arg(m_webServer->serverAddress().toString())
                                     .arg(m_webServer->serverPort()));
         m_statusLabel->setText(tr("Scan the QR code with a phone connected to the same network."));
+
+        if (!m_requestReceived)
+        {
+            m_hintTimer->start();
+        }
     }
     else if (m_candidates.isEmpty())
     {

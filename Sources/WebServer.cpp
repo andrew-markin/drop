@@ -166,6 +166,8 @@ quint16 WebServer::serverPort() const
 
 bool WebServer::handleRequest(const QHttpServerRequest& request, QHttpServerResponder& responder)
 {
+    emit requestReceived();
+
     // Pages of other sites may point the browser here with their own host name (DNS rebinding),
     // the server answers only to its own address
     QByteArray expectedHost = QString("%1:%2").arg(serverAddress().toString()).arg(serverPort()).toLatin1();

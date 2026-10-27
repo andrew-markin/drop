@@ -36,6 +36,7 @@ private slots:
     void updateUpload(const QByteArray& id);
 
     void maybeNotifyComplete();
+    void showConnectionHint();
 
 private:
     void updateStatus();
@@ -62,6 +63,9 @@ private:
     QHash<QByteArray, QTreeWidgetItem*> m_uploadItems;
     QProgressBar* m_totalProgressBar;
     QPushButton* m_openButton;
+
+    QTimer* m_hintTimer;
+    bool m_requestReceived;
 
     QSystemTrayIcon* m_trayIcon;
     QTimer* m_completeTimer;
