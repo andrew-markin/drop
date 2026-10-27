@@ -1,8 +1,9 @@
-name: Build
+name: Build and Release
 
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -10,6 +11,22 @@ permissions:
   contents: read
 
 jobs:
+  # Fail fast on tags that do not match the project version, before the builds
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check tag matches project version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PROJECT_VERSION="$(grep -oP 'project\(Drop VERSION \K[0-9.]+' Sources/CMakeLists.txt)"
+          if [ "$TAG_VERSION" != "$PROJECT_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match project version $PROJECT_VERSION"
+            exit 1
+          fi
+
   web:
     runs-on: ubuntu-latest
     defaults:
@@ -45,6 +62,7 @@ jobs:
           git diff --exit-code docs/vectors
 
   build-linux:
+    needs: check-version
     runs-on: ubuntu-latest
     timeout-minutes: 300 # Building Qt for a new builder image takes a while
     # A new push to main waits instead of cancelling, so a builder image that took hours is pushed
@@ -57,7 +75,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [ubuntu, fedora]
+        include:
+          - distro: ubuntu
+            script: ReleaseUbuntu.sh
+            package: deb
+          - distro: fedora
+            script: ReleaseFedora.sh
+            package: rpm
     steps:
       - uses: actions/checkout@v7
 
@@ -110,7 +134,17 @@ jobs:
             ctest --test-dir Builds/Tests --output-on-failure --no-tests=error
           '
 
+      - name: Build package
+        run: ./${{ matrix.script }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-${{ matrix.package }}
+          path: Release/*.${{ matrix.package }}
+          if-no-files-found: error
+
   build-windows:
+    needs: check-version
     runs-on: windows-2022
     timeout-minutes: 60
     steps:
@@ -155,3 +189,50 @@ jobs:
             type Builds\Tests\%%~nT.txt
           )
           exit /b 1
+
+      - name: Install NSIS if missing
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\NSIS\makensis.exe")) {
+            choco install nsis -y --no-progress
+          }
+
+      - name: Build installer
+        shell: cmd
+        env:
+          QT_PREFIX: ${{ env.QT_ROOT_DIR }}
+        run: call ReleaseWindows.cmd
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-windows
+          path: Release/*.exe
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [web, vectors, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: package-*
+          path: packages
+          merge-multiple: true
+
+      # Lets users verify downloads with "sha256sum -c SHA256SUMS --ignore-missing"
+      - name: Calculate checksums
+        working-directory: packages
+        run: |
+          sha256sum -- * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: Drop ${{ github.ref_name }}
+          files: packages/*
+          generate_release_notes: true
+          draft: true # Published manually after review
