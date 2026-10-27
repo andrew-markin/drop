@@ -54,6 +54,10 @@ target_compile_definitions(
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network HttpServer)
 
+# Bundled third party libraries
+
+add_subdirectory(ThirdParty/QrCodeGen)
+
 # Add the target
 
 add_executable(
