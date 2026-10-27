@@ -1,4 +1,5 @@
 /* eslint-disable import-x/no-nodejs-modules */
+import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 
 import { quasar, transformAssetUrls } from '@quasar/vite-plugin'
@@ -9,7 +10,12 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   server: {
     port: 8086,
-    strictPort: true
+    strictPort: true,
+    // Talk to a running desktop application during development:
+    // DROP_SERVER=192.168.0.5:54246 npm run dev
+    proxy: process.env.DROP_SERVER
+      ? { '/api': { target: `http://${process.env.DROP_SERVER}`, changeOrigin: true } }
+      : undefined
   },
   // The desktop application serves the page from its resources at the site root
   base: '/',
