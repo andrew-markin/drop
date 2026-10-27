@@ -13,6 +13,8 @@ https://github.com/andrew-markin/mult.
   the style of the history and no Co-Authored-By or other attribution.
 - `SPECS.md` is the user's own notes and is never committed (it is listed in `.git/info/exclude`).
 - Before committing web changes run `npm run lint`, `npm test` and `npm run build` in `Web/`.
+- The desktop build runs `npm ci` (when `package-lock.json` changes) and `npm run build` in `Web/`
+  and compiles the result into the `:/Web` resources, so it needs Node.js too.
 - Before committing desktop changes build with tests and run them:
 
   ```bash
