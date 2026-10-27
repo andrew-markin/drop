@@ -36,6 +36,8 @@ add_drop_test(
 
 add_drop_test(
     TestWebServer
+    ${PROJECT_SOURCE_DIR}/Crypto.cpp
+    ${PROJECT_SOURCE_DIR}/Crypto.h
     ${PROJECT_SOURCE_DIR}/Storage.cpp
     ${PROJECT_SOURCE_DIR}/Storage.h
     ${PROJECT_SOURCE_DIR}/Uploads.cpp
@@ -46,8 +48,12 @@ add_drop_test(
     TestWebServer.qrc
 )
 
+target_link_libraries(TestWebServer PRIVATE Sodium::Sodium)
+
 add_drop_test(
     TestApi
+    ${PROJECT_SOURCE_DIR}/Crypto.cpp
+    ${PROJECT_SOURCE_DIR}/Crypto.h
     ${PROJECT_SOURCE_DIR}/Storage.cpp
     ${PROJECT_SOURCE_DIR}/Storage.h
     ${PROJECT_SOURCE_DIR}/Uploads.cpp
@@ -56,6 +62,8 @@ add_drop_test(
     ${PROJECT_SOURCE_DIR}/WebServer.h
     RawHttp.h
 )
+
+target_link_libraries(TestApi PRIVATE Sodium::Sodium)
 
 add_drop_test(
     TestQrCodeWidget

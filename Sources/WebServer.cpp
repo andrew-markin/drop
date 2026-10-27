@@ -9,7 +9,6 @@
 #include <QHttpServerResponder>
 #include <QJsonArray>
 #include <QJsonDocument>
-#include <QRandomGenerator>
 #include <QRegularExpression>
 #include <QTcpServer>
 
@@ -26,7 +25,7 @@ static const int SessionIdSize = 16;
 static const int SessionCountMax = 64;
 static const int FileIdSize = 16;
 
-// Room for the sealing overhead and a JSON request
+// Room for a JSON request, sealed
 static const qint64 BodySizeReserve = 4096;
 
 // Vite puts the bundles with content hashes in their names here, they never change
@@ -76,19 +75,17 @@ void respondWithStatus(QHttpServerResponder& responder, QHttpServerResponder::St
     responder.write(QByteArray(), headers, status);
 }
 
-void respondWithJson(QHttpServerResponder& responder, const QJsonObject& object)
+void respondWithData(QHttpServerResponder& responder, const QByteArray& data, const QByteArray& contentType)
 {
     QHttpHeaders headers = makeHeaders();
     headers.append(QHttpHeaders::WellKnownHeader::CacheControl, "no-store");
-    headers.append(QHttpHeaders::WellKnownHeader::ContentType, "application/json");
-    responder.write(QJsonDocument(object).toJson(QJsonDocument::Compact), headers);
+    headers.append(QHttpHeaders::WellKnownHeader::ContentType, contentType);
+    responder.write(data, headers);
 }
 
-QByteArray generateId(int size)
+QByteArray toJson(const QJsonObject& object)
 {
-    QByteArray id(size, Qt::Uninitialized);
-    QRandomGenerator::system()->fillRange(reinterpret_cast<quint32*>(id.data()), size / sizeof(quint32));
-    return id;
+    return QJsonDocument(object).toJson(QJsonDocument::Compact);
 }
 
 QString encodeBase64Url(const QByteArray& data)
@@ -131,13 +128,13 @@ QHttpServerResponder::StatusCode getStatusCode(Uploads::Error error)
 
 } // namespace
 
-WebServer::WebServer(const QString& resourceRoot, Uploads* uploads, QObject* parent)
-    : QAbstractHttpServer(parent), m_resourceRoot(resourceRoot), m_uploads(uploads)
+WebServer::WebServer(const QString& resourceRoot, Uploads* uploads, const QByteArray& secret, QObject* parent)
+    : QAbstractHttpServer(parent), m_resourceRoot(resourceRoot), m_uploads(uploads), m_secret(secret)
 {
     m_tcpServer = new QTcpServer(this);
 
     QHttpServerConfiguration configuration = this->configuration();
-    configuration.setMaximumBodySize((m_uploads ? m_uploads->chunkSize() : 0) + BodySizeReserve);
+    configuration.setMaximumBodySize((m_uploads ? m_uploads->chunkSize() : 0) + Crypto::SealOverhead + BodySizeReserve);
     setConfiguration(configuration);
 }
 
@@ -246,7 +243,7 @@ void WebServer::respondWithFile(const QHttpServerRequest& request, QHttpServerRe
 
 void WebServer::respondToApi(const QHttpServerRequest& request, QHttpServerResponder& responder)
 {
-    if (!m_uploads)
+    if (!m_uploads || m_secret.size() != Crypto::SecretSize)
     {
         respondWithStatus(responder, QHttpServerResponder::StatusCode::NotFound);
         return;
@@ -259,35 +256,55 @@ void WebServer::respondToApi(const QHttpServerRequest& request, QHttpServerRespo
     }
 
     QString path = request.url().path();
+    QHttpServerResponder::StatusCode status = QHttpServerResponder::StatusCode::Ok;
 
     if (path == SessionPath)
     {
-        respondWithJson(responder, QJsonObject({{"session", encodeBase64Url(openSession())}}));
+        QJsonObject answer = openSession(request.body(), &status);
+
+        if (status != QHttpServerResponder::StatusCode::Ok)
+        {
+            respondWithStatus(responder, status);
+            return;
+        }
+
+        respondWithData(responder, toJson(answer), "application/json");
         return;
     }
 
     // /api/session/<session>/<operation>[/<arguments>]
     QStringList parts = path.mid(SessionPath.size() + 1).split('/');
     QByteArray sessionId = decodeBase64Url(parts.value(0), SessionIdSize);
+    Session session;
 
-    if (!path.startsWith(SessionPath + "/") || sessionId.isEmpty() || !touchSession(sessionId))
+    if (!path.startsWith(SessionPath + "/") || sessionId.isEmpty() || !touchSession(sessionId, &session))
     {
         respondWithStatus(responder, QHttpServerResponder::StatusCode::NotFound);
         return;
     }
 
+    // The path is bound to the request, so a sealed body cannot be replayed to another operation or file
+    QByteArray sealedRequest = request.body();
+    QByteArray requestAd = Crypto::makeRequestAd(sessionId, "POST", request.url().path(QUrl::FullyEncoded).toLatin1());
+    QByteArray body;
+
+    if (!Crypto::open(session.keys.up, sealedRequest, requestAd, &body))
+    {
+        respondWithStatus(responder, QHttpServerResponder::StatusCode::Unauthorized);
+        return;
+    }
+
     QString operation = parts.value(1);
-    QHttpServerResponder::StatusCode status = QHttpServerResponder::StatusCode::Ok;
     QJsonObject answer;
 
     if (operation == "file" && parts.size() == 2)
     {
-        answer = announceFile(request.body(), &status);
+        answer = announceFile(body, &status);
     }
     else if (operation == "chunk" && parts.size() == 4)
     {
         QByteArray fileId = decodeBase64Url(parts.value(2), FileIdSize);
-        answer = writeChunk(fileId, parts.value(3), request.body(), &status);
+        answer = writeChunk(fileId, parts.value(3), body, &status);
     }
     else if (operation == "status" && parts.size() == 2)
     {
@@ -304,32 +321,71 @@ void WebServer::respondToApi(const QHttpServerRequest& request, QHttpServerRespo
         return;
     }
 
-    respondWithJson(responder, answer);
+    QByteArray answerAd = Crypto::makeAnswerAd(sealedRequest.left(Crypto::NonceSize));
+    respondWithData(responder, Crypto::seal(session.keys.down, toJson(answer), answerAd), "application/octet-stream");
 }
 
-QByteArray WebServer::openSession()
+QJsonObject WebServer::openSession(const QByteArray& body, QHttpServerResponder::StatusCode* status)
 {
-    QByteArray sessionId = generateId(SessionIdSize);
-    m_sessionIds.append(sessionId);
+    QJsonObject request = QJsonDocument::fromJson(body).object();
+    QByteArray clientPublicKey = decodeBase64Url(request.value("key").toString(), Crypto::KeySize);
+    QByteArray proof = decodeBase64Url(request.value("proof").toString(), Crypto::KeySize);
+
+    if (clientPublicKey.isEmpty() || proof.isEmpty())
+    {
+        *status = QHttpServerResponder::StatusCode::BadRequest;
+        return QJsonObject();
+    }
+
+    // Strangers without the link are turned down before the server does any work for them
+    if (!Crypto::equal(proof, Crypto::makeHelloProof(m_secret, clientPublicKey)))
+    {
+        *status = QHttpServerResponder::StatusCode::Unauthorized;
+        return QJsonObject();
+    }
+
+    Crypto::KeyPair serverKeyPair = Crypto::generateKeyPair();
+    QByteArray shared = Crypto::computeShared(serverKeyPair.secretKey, clientPublicKey);
+
+    if (shared.isEmpty())
+    {
+        *status = QHttpServerResponder::StatusCode::Unauthorized;
+        return QJsonObject();
+    }
+
+    Session session;
+    session.id = Crypto::randomBytes(SessionIdSize);
+    session.keys = Crypto::deriveSessionKeys(m_secret, shared, clientPublicKey, serverKeyPair.publicKey);
+    m_sessions.append(session);
 
     // Pages that were closed never say so, the oldest ones are forgotten
-    while (m_sessionIds.size() > SessionCountMax)
+    while (m_sessions.size() > SessionCountMax)
     {
-        m_sessionIds.removeFirst();
+        m_sessions.removeFirst();
     }
 
-    return sessionId;
+    QByteArray confirmAd = Crypto::makeConfirmAd(session.id, clientPublicKey, serverKeyPair.publicKey);
+
+    return QJsonObject({
+        {"session", encodeBase64Url(session.id)},
+        {"key", encodeBase64Url(serverKeyPair.publicKey)},
+        {"proof", encodeBase64Url(Crypto::seal(session.keys.down, QByteArray(), confirmAd))},
+    });
 }
 
-bool WebServer::touchSession(const QByteArray& sessionId)
+bool WebServer::touchSession(const QByteArray& sessionId, Session* session)
 {
-    if (!m_sessionIds.removeOne(sessionId))
+    for (int i = 0; i < m_sessions.size(); i++)
     {
-        return false;
+        if (m_sessions.at(i).id == sessionId)
+        {
+            *session = m_sessions.takeAt(i);
+            m_sessions.append(*session);
+            return true;
+        }
     }
 
-    m_sessionIds.append(sessionId);
-    return true;
+    return false;
 }
 
 QJsonObject WebServer::announceFile(const QByteArray& body, QHttpServerResponder::StatusCode* status)

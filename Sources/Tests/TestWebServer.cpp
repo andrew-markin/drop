@@ -38,7 +38,7 @@ private:
 
 void TestWebServer::init()
 {
-    m_server = new WebServer(":/Web", nullptr, this);
+    m_server = new WebServer(":/Web", nullptr, QByteArray(), this);
     QVERIFY2(m_server->start(QHostAddress::LocalHost), qPrintable(m_server->errorString()));
 }
 
@@ -60,7 +60,7 @@ Response TestWebServer::send(const QByteArray& method, const QByteArray& path, c
 
 void TestWebServer::listensOnRandomPort()
 {
-    WebServer other(":/Web", nullptr);
+    WebServer other(":/Web", nullptr, QByteArray());
     QVERIFY(other.start(QHostAddress::LocalHost));
 
     QVERIFY(m_server->serverPort() != 0);

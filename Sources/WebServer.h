@@ -4,6 +4,8 @@
 #include <QAbstractHttpServer>
 #include <QHttpServerResponder>
 #include <QJsonObject>
+
+#include "Crypto.h"
 #include <QHostAddress>
 
 class QTcpServer;
@@ -15,7 +17,7 @@ class WebServer : public QAbstractHttpServer
     Q_OBJECT
 
 public:
-    WebServer(const QString& resourceRoot, Uploads* uploads, QObject* parent = nullptr);
+    WebServer(const QString& resourceRoot, Uploads* uploads, const QByteArray& secret, QObject* parent = nullptr);
 
     bool start(const QHostAddress& address, quint16 port = 0);
 
@@ -31,8 +33,14 @@ private:
     void respondWithFile(const QHttpServerRequest& request, QHttpServerResponder& responder);
     void respondToApi(const QHttpServerRequest& request, QHttpServerResponder& responder);
 
-    QByteArray openSession();
-    bool touchSession(const QByteArray& sessionId);
+    struct Session
+    {
+        QByteArray id;
+        Crypto::SessionKeys keys;
+    };
+
+    QJsonObject openSession(const QByteArray& body, QHttpServerResponder::StatusCode* status);
+    bool touchSession(const QByteArray& sessionId, Session* session);
 
     QJsonObject announceFile(const QByteArray& body, QHttpServerResponder::StatusCode* status);
     QJsonObject writeChunk(const QByteArray& fileId, const QString& index, const QByteArray& body,
@@ -42,7 +50,8 @@ private:
 private:
     QString m_resourceRoot;
     Uploads* m_uploads;
-    QList<QByteArray> m_sessionIds; // Most recently used last
+    QByteArray m_secret;
+    QList<Session> m_sessions; // Most recently used last
     QTcpServer* m_tcpServer;
 };
 

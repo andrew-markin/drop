@@ -11,32 +11,24 @@
 #include <QLocale>
 #include <QProgressBar>
 #include <QPushButton>
-#include <QRandomGenerator>
+#include <QMessageBox>
 #include <QStandardPaths>
 #include <QTimer>
 #include <QTreeWidget>
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include "Crypto.h"
 #include "QrCodeWidget.h"
 #include "Uploads.h"
 #include "WebServer.h"
 
 namespace {
 
-static const int SecretSize = 32;
-
 // Network changes are rare, but a laptop may join Wi-Fi after the start
 static const int RefreshCandidatesTimeout = 3000; // 3s
 
 static const int CopiedFeedbackTimeout = 1500; // 1.5s
-
-QByteArray generateSecret()
-{
-    QByteArray secret(SecretSize, Qt::Uninitialized);
-    QRandomGenerator::system()->fillRange(reinterpret_cast<quint32*>(secret.data()), SecretSize / sizeof(quint32));
-    return secret;
-}
 
 enum UploadColumn
 {
@@ -52,7 +44,7 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
 
 } // namespace
 
-Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(generateSecret()), m_webServer(nullptr)
+Drop::Drop(QWidget* parent) : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr)
 {
     setWindowTitle(PROJECT_TITLE);
 
@@ -198,7 +190,7 @@ void Drop::restartWebServer()
 
     if (index >= 0 && index < m_candidates.size())
     {
-        m_webServer = new WebServer(":/Web", m_uploads, this);
+        m_webServer = new WebServer(":/Web", m_uploads, m_secret, this);
 
         // A new random port every time, so a busy port is never a problem
         if (m_webServer->start(m_candidates.at(index).address))
@@ -326,6 +318,12 @@ int main(int argc, char* argv[])
 
     QApplication application(argc, argv);
     QApplication::setWindowIcon(QIcon(":/Drop.svg"));
+
+    if (!Crypto::init())
+    {
+        QMessageBox::critical(nullptr, PROJECT_TITLE, QObject::tr("Unable to initialize the cryptography library."));
+        return EXIT_FAILURE;
+    }
 
     Drop drop;
     drop.show();
