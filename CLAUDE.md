@@ -31,6 +31,14 @@ https://github.com/andrew-markin/mult.
   `DropHeadless`, the server without the window that is built only with the tests. Alone they
   run with `DROP_HEADLESS=<path to DropHeadless> npm run test:e2e` in `Web/`.
 
+## CI
+
+`.github/workflows/build.yml` checks the web client, regenerates the protocol vectors, and builds
+and tests everything on Windows and inside the `Dockerfile.ubuntu` and `Dockerfile.fedora` builder
+images (Qt built from sources, libsodium, Node.js). Builder images are kept in GitHub Container
+Registry under the hash of their Dockerfile, so changing a Dockerfile means hours of Qt build in
+CI; build it locally first with `docker build -t drop-ubuntu-builder - < Dockerfile.ubuntu`.
+
 ## Decisions to keep
 
 - The link secret `k` lives only in the URL fragment and in memory, never in logs, files or
