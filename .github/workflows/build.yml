@@ -9,10 +9,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   web:
     runs-on: ubuntu-latest
@@ -51,6 +47,10 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     timeout-minutes: 300 # Building Qt for a new builder image takes a while
+    # A new push to main waits instead of cancelling, so a builder image that took hours is pushed
+    concurrency:
+      group: build-linux-${{ matrix.distro }}-${{ github.ref }}
+      cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     permissions:
       contents: read
       packages: write
@@ -148,4 +148,10 @@ jobs:
                 -DCMAKE_TOOLCHAIN_FILE="%VCPKG_INSTALLATION_ROOT%\scripts\buildsystems\vcpkg.cmake" ^
                 -DVCPKG_TARGET_TRIPLET=x64-windows-static-md -DDROP_BUILD_TESTS=ON || exit /b 1
           cmake --build Builds\Tests --config Release --parallel || exit /b 1
-          ctest --test-dir Builds\Tests -C Release --output-on-failure --no-tests=error || exit /b 1
+          ctest --test-dir Builds\Tests -C Release --output-on-failure --no-tests=error && exit /b 0
+          rem Test output doesn't reach ctest log on Windows, so detailed reports are written to files
+          for %%T in (Builds\Tests\Tests\Release\Test*.exe) do (
+            %%T -o Builds\Tests\%%~nT.txt,txt
+            type Builds\Tests\%%~nT.txt
+          )
+          exit /b 1
