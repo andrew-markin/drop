@@ -116,7 +116,7 @@ endif()
 
 # The web client code (Api, Uploader) against the real server, see Web/e2e. Run by node directly
 # with the options of "npm run test:e2e": npm is a batch file on Windows, which CTest cannot start.
-find_program(NODE_EXECUTABLE NAMES node REQUIRED)
+# NODE_EXECUTABLE comes from EmbedWeb.cmake.
 
 add_test(
     NAME EndToEnd
