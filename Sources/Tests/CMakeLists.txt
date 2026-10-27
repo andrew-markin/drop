@@ -106,12 +106,14 @@ if(WIN32)
     target_compile_options(DropHeadless PRIVATE /utf-8 /nologo)
 endif()
 
-# The web client code (Api, Uploader) against the real server, see Web/e2e
-if(WIN32)
-    # npm is a batch file there, which only the command interpreter runs
-    add_test(NAME EndToEnd COMMAND cmd /c ${NPM_EXECUTABLE} run test:e2e WORKING_DIRECTORY ${WEB_SOURCE_DIR})
-else()
-    add_test(NAME EndToEnd COMMAND ${NPM_EXECUTABLE} run test:e2e WORKING_DIRECTORY ${WEB_SOURCE_DIR})
-endif()
+# The web client code (Api, Uploader) against the real server, see Web/e2e. Run by node directly
+# with the options of "npm run test:e2e": npm is a batch file on Windows, which CTest cannot start.
+find_program(NODE_EXECUTABLE NAMES node REQUIRED)
+
+add_test(
+    NAME EndToEnd
+    COMMAND ${NODE_EXECUTABLE} node_modules/vitest/vitest.mjs run --dir e2e --testTimeout 60000
+    WORKING_DIRECTORY ${WEB_SOURCE_DIR}
+)
 
 set_tests_properties(EndToEnd PROPERTIES ENVIRONMENT "DROP_HEADLESS=$<TARGET_FILE:DropHeadless>")
