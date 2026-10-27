@@ -8,8 +8,6 @@ export default {
   en: {
     linkIncomplete: 'The link is incomplete. Scan the QR code shown by Drop on the computer again.',
     chooseFiles: 'Choose Files',
-    preparing:
-      'The phone is preparing the files. With many photos or videos it can take a couple of minutes.',
     outOfSpace: 'The computer is out of disk space. Free some space and reload this page.',
     connectionLost:
       'The connection is lost, trying again. Check that this device is on the same network as the computer.',
@@ -28,7 +26,6 @@ export default {
   ru: {
     linkIncomplete: 'Ссылка неполная. Отсканируйте QR-код в Drop на компьютере ещё раз.',
     chooseFiles: 'Выбрать файлы',
-    preparing: 'Телефон готовит файлы. Если фото и видео много, это может занять пару минут.',
     outOfSpace: 'На компьютере закончилось место. Освободите место и перезагрузите страницу.',
     connectionLost:
       'Связь потеряна, пробуем снова. Проверьте, что устройство в той же сети, что и компьютер.',
