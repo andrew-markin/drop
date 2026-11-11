@@ -98,6 +98,30 @@ describe('Uploader', () => {
     expect(server.maxInFlight).toBe(ChunksInFlight)
   })
 
+  it('keeps a few chunks in flight across small files', async () => {
+    const server = new FakeServer()
+    const { uploader } = makeUploader(server)
+    const files = ['a', 'b', 'c', 'd', 'e'].map((name) => makeFile(`${name}.txt`, 'xyz'))
+
+    await uploader.add(files)
+
+    expect(server.maxInFlight).toBe(ChunksInFlight)
+    expect(uploader.items.map((item) => item.status)).toEqual(Array(files.length).fill('done'))
+  })
+
+  it('goes on with other files when a chunk fails for good', async () => {
+    const server = new FakeServer()
+    const { uploader } = makeUploader(server)
+
+    // The announces pass, the first chunk of the first file is refused
+    server.failures = [undefined, undefined, new ApiError(400)]
+    await uploader.add([makeFile('bad.txt', 'abc'), makeFile('good.txt', 'def')])
+
+    expect(uploader.items.map((item) => item.status)).toEqual(['failed', 'done'])
+    expect(server.content('good.txt')).toBe('def')
+    expect(uploader.stopped).toBeUndefined()
+  })
+
   it('handles an empty file', async () => {
     const server = new FakeServer()
     const { uploader } = makeUploader(server)
@@ -171,9 +195,10 @@ describe('Uploader', () => {
     const server = new FakeServer()
     const { uploader } = makeUploader(server)
 
-    // Both files are announced, the first chunk finds the disk full
+    // Both files are announced, the first chunk finds the disk full while the other workers take
+    // the rest of the first file
     server.failures = [undefined, undefined, new ApiError(507)]
-    await uploader.add([makeFile('a.txt', 'abc'), makeFile('b.txt', 'def')])
+    await uploader.add([makeFile('a.txt', '0123456789ab'), makeFile('b.txt', 'def')])
 
     expect(uploader.items.map((item) => item.status)).toEqual(['failed', 'waiting'])
     expect(uploader.stopped.status).toBe(507)
