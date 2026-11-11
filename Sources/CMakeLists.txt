@@ -143,7 +143,7 @@ if(WIN32)
         ${CMAKE_CURRENT_BINARY_DIR}/Drop.rc
     )
 elseif(LINUX)
-    set(PROJECT_ICON "Drop.png")
+    set(PROJECT_ICON "Drop.svg")
 endif()
 
 target_link_libraries(

@@ -69,21 +69,21 @@ configure_file(
 
 install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/FixupRPATHs.cmake)
 
-# Install project icon
+# Install project icon into hicolor icon theme as scalable one, so desktop environments
+# render it sharp at any size and display scale instead of upscaling a fixed size bitmap
 
 get_filename_component(PROJECT_ICON_EXT ${PROJECT_ICON} EXT)
-set(DESKTOP_ICON_FILENAME "${PROJECT_NAME}${PROJECT_ICON_EXT}")
 
 install(
     FILES "${PROJECT_SOURCE_DIR}/${PROJECT_ICON}"
-    DESTINATION "${PROJECT_BINARIES_DEST_DIR}"
-    RENAME "${DESKTOP_ICON_FILENAME}"
+    DESTINATION "usr/share/icons/hicolor/scalable/apps"
+    RENAME "${PROJECT_NAME}${PROJECT_ICON_EXT}"
 )
 
 # Configure and install desktop files
 
 set(DESKTOP_NAME "${PROJECT_TITLE}")
-set(DESKTOP_ICON "/${PROJECT_BINARIES_DEST_DIR}/${DESKTOP_ICON_FILENAME}")
+set(DESKTOP_ICON "${PROJECT_NAME}")
 set(DESKTOP_APPLICATION_EXEC "/${PROJECT_EXECUTABLE}")
 set(DESKTOP_COMMENT "${PROJECT_DESCRIPTION}")
 set(DESKTOP_CATEGORIES "Network;FileTransfer;")
