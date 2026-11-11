@@ -8,7 +8,6 @@
 #include <QIcon>
 #include <QLabel>
 #include <QLocale>
-#include <QProgressBar>
 #include <QPushButton>
 #include <QMessageBox>
 #include <QStandardPaths>
@@ -85,18 +84,14 @@ Drop::Drop(QWidget* parent)
     m_uploadsTreeWidget->header()->setSectionResizeMode(UploadSizeColumn, QHeaderView::ResizeToContents);
     m_uploadsTreeWidget->header()->setSectionResizeMode(UploadStatusColumn, QHeaderView::ResizeToContents);
 
-    m_totalProgressBar = new QProgressBar(this);
-    m_totalProgressBar->setRange(0, 1000);
-    m_totalProgressBar->setTextVisible(false);
-    m_totalProgressBar->hide();
-
+    // There from the start, so the row does not change when the folder appears with the first file
     m_openButton = new QPushButton(tr("Open Folder"), this);
-    m_openButton->hide();
+    m_openButton->setEnabled(false);
     connect(m_openButton, &QPushButton::clicked, this, &Drop::openDropDirectory);
 
     connect(m_uploads, &Uploads::uploadAdded, this, &Drop::addUpload);
     connect(m_uploads, &Uploads::uploadChanged, this, &Drop::updateUpload);
-    connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, &QPushButton::show);
+    connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, [this]() { m_openButton->setEnabled(true); });
 
     // Only to tell when a drop is over: the application quits with its window
     m_trayIcon = new QSystemTrayIcon(QApplication::windowIcon(), this);
@@ -119,7 +114,7 @@ Drop::Drop(QWidget* parent)
 
     // Styles make combo boxes and buttons a little different in height, in one row they fill it alike
     for (QWidget* widget : {static_cast<QWidget*>(m_networkComboBox), static_cast<QWidget*>(m_copyButton),
-                            static_cast<QWidget*>(m_qrCodeButton)})
+                            static_cast<QWidget*>(m_qrCodeButton), static_cast<QWidget*>(m_openButton)})
     {
         widget->setSizePolicy(widget->sizePolicy().horizontalPolicy(), QSizePolicy::Preferred);
     }
@@ -128,16 +123,12 @@ Drop::Drop(QWidget* parent)
     linkLayout->addWidget(m_networkComboBox, 1);
     linkLayout->addWidget(m_copyButton);
     linkLayout->addWidget(m_qrCodeButton);
-
-    QHBoxLayout* progressLayout = new QHBoxLayout();
-    progressLayout->addWidget(m_totalProgressBar, 1);
-    progressLayout->addWidget(m_openButton);
+    linkLayout->addWidget(m_openButton);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addLayout(linkLayout);
     layout->addWidget(m_statusLabel);
     layout->addWidget(m_uploadsTreeWidget, 1);
-    layout->addLayout(progressLayout);
 
     m_refreshTimer = new QTimer(this);
     m_refreshTimer->setInterval(RefreshCandidatesTimeout);
@@ -263,8 +254,6 @@ void Drop::addUpload(const QByteArray& id)
     item->setTextAlignment(UploadStatusColumn, Qt::AlignRight | Qt::AlignVCenter);
     m_uploadItems.insert(id, item);
 
-    m_totalProgressBar->show();
-
     updateUpload(id);
 }
 
@@ -291,7 +280,6 @@ void Drop::updateUpload(const QByteArray& id)
     }
 
     m_uploadsTreeWidget->scrollToItem(item);
-    updateTotalProgress();
 }
 
 void Drop::maybeNotifyComplete()
@@ -321,25 +309,6 @@ void Drop::maybeNotifyComplete()
     m_trayIcon->showMessage(tr("Drop is complete"), tr("Received %n file(s). Click to open the folder.", "", newCount),
                             QApplication::windowIcon());
     QApplication::alert(this);
-}
-
-void Drop::updateTotalProgress()
-{
-    qint64 totalSize = 0;
-    qint64 receivedSize = 0;
-    int completeCount = 0;
-
-    const QList<Uploads::Upload> uploads = m_uploads->uploads();
-
-    for (const Uploads::Upload& upload : uploads)
-    {
-        totalSize += upload.size;
-        receivedSize += upload.receivedSize(m_uploads->chunkSize());
-        completeCount += upload.complete ? 1 : 0;
-    }
-
-    m_totalProgressBar->setValue(totalSize > 0 ? int(receivedSize * 1000 / totalSize) : 1000);
-    m_totalProgressBar->setToolTip(tr("%1 of %n file(s) received", "", uploads.size()).arg(completeCount));
 }
 
 void Drop::updateStatus()

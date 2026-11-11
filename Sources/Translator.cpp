@@ -11,7 +11,6 @@ const QHash<QString, QStringList>& getEnglishTranslations()
     static const QHash<QString, QStringList> translations = {
         {"Received %n file(s). Click to open the folder.",
          {"Received %n file. Click to open the folder.", "Received %n files. Click to open the folder."}},
-        {"%1 of %n file(s) received", {"%1 of %n file received", "%1 of %n files received"}},
     };
 
     return translations;
@@ -43,8 +42,6 @@ const QHash<QString, QStringList>& getRussianTranslations()
         {"Received %n file(s). Click to open the folder.",
          {"Получен %n файл. Нажмите, чтобы открыть папку.", "Получено %n файла. Нажмите, чтобы открыть папку.",
           "Получено %n файлов. Нажмите, чтобы открыть папку."}},
-        // "Из" takes the genitive: из 1 файла, из 2 файлов, из 21 файла
-        {"%1 of %n file(s) received", {"Получено %1 из %n файла", "Получено %1 из %n файлов", "Получено %1 из %n файлов"}},
     };
 
     return translations;

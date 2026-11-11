@@ -5,7 +5,24 @@
 
 NetworkComboBox::NetworkComboBox(QWidget* parent) : QComboBox(parent)
 {
-    // Nothing
+    setSizeAdjustPolicy(QComboBox::AdjustToContents);
+}
+
+QSize NetworkComboBox::sizeHint() const
+{
+    QSize size = QComboBox::sizeHint();
+    size.rwidth() += fontMetrics().horizontalAdvance(prefixed(QString()));
+    return size;
+}
+
+QSize NetworkComboBox::minimumSizeHint() const
+{
+    return sizeHint();
+}
+
+QString NetworkComboBox::prefixed(const QString& text) const
+{
+    return tr("Network: %1").arg(text);
 }
 
 void NetworkComboBox::paintEvent(QPaintEvent* event)
@@ -14,7 +31,7 @@ void NetworkComboBox::paintEvent(QPaintEvent* event)
 
     QStyleOptionComboBox option;
     initStyleOption(&option);
-    option.currentText = tr("Network: %1").arg(option.currentText);
+    option.currentText = prefixed(option.currentText);
 
     QStylePainter painter(this);
     painter.drawComplexControl(QStyle::CC_ComboBox, option);

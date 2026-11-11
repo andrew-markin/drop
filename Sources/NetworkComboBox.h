@@ -11,8 +11,15 @@ class NetworkComboBox : public QComboBox
 public:
     NetworkComboBox(QWidget* parent = nullptr);
 
+    // Wide enough for the longest network with the prefix, the window is never narrower
+    QSize sizeHint() const override;
+    QSize minimumSizeHint() const override;
+
 protected:
     void paintEvent(QPaintEvent* event) override;
+
+private:
+    QString prefixed(const QString& text) const;
 };
 
 #endif // NETWORKCOMBOBOX_H

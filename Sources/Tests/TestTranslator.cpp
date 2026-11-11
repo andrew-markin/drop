@@ -81,7 +81,6 @@ void TestTranslator::englishPlurals()
              "Received 1 file. Click to open the folder.");
     QCOMPARE(translate(QLocale::English, "Received %n file(s). Click to open the folder.", 3),
              "Received 3 files. Click to open the folder.");
-    QCOMPARE(translate(QLocale::English, "%1 of %n file(s) received", 1).arg(0), "0 of 1 file received");
     QCOMPARE(translate(QLocale::English, "Open Folder"), "Open Folder");
 }
 
@@ -89,7 +88,8 @@ void TestTranslator::otherLanguages()
 {
     // English, with its plural forms
     QCOMPARE(translate(QLocale::German, "Open Folder"), "Open Folder");
-    QCOMPARE(translate(QLocale::German, "%1 of %n file(s) received", 2).arg(1), "1 of 2 files received");
+    QCOMPARE(translate(QLocale::German, "Received %n file(s). Click to open the folder.", 2),
+             "Received 2 files. Click to open the folder.");
 }
 
 void TestTranslator::everythingIsTranslated()

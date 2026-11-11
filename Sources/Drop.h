@@ -10,7 +10,6 @@
 
 class QComboBox;
 class QLabel;
-class QProgressBar;
 class QPushButton;
 class QSystemTrayIcon;
 class QTimer;
@@ -42,7 +41,6 @@ private slots:
 private:
     void updateStatus();
     void setStatus(const QString& text);
-    void updateTotalProgress();
 
 private:
     QByteArray m_secret;
@@ -62,7 +60,6 @@ private:
 
     QTreeWidget* m_uploadsTreeWidget;
     QHash<QByteArray, QTreeWidgetItem*> m_uploadItems;
-    QProgressBar* m_totalProgressBar;
     QPushButton* m_openButton;
 
     QSystemTrayIcon* m_trayIcon;
