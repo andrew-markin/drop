@@ -3,12 +3,16 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QComboBox>
+#include <QCursor>
 #include <QDesktopServices>
 #include <QIcon>
 #include <QLabel>
 #include <QPushButton>
+#include <QScreen>
+#include <QSettings>
 #include <QMessageBox>
 #include <QStandardPaths>
+#include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
 #include <QUrl>
@@ -33,6 +37,9 @@ static const int CopiedFeedbackTimeout = 1500; // 1.5s
 // A device announces all picked files at once, but more may be picked right after, or come from
 // another device. The drop is over when everything stays complete for a while.
 static const int CompleteQuietTimeout = 5000; // 5s
+
+static const char* const GeometryKey = "Window/Geometry";
+static const qreal FirstWidthFactor = 1.1; // Of the minimum width
 
 QString describeCandidate(const LocalNetwork::Candidate& candidate)
 {
@@ -120,7 +127,37 @@ Drop::Drop(QWidget* parent)
     m_refreshTimer->start();
 
     refreshCandidates();
-    resize(600, 480);
+
+    // Where it was left last time, Qt keeps it on the screens there are now
+    if (!restoreGeometry(QSettings().value(GeometryKey).toByteArray()))
+    {
+        placeFirstTime();
+    }
+}
+
+// A little wider than the least the row of buttons needs, about square, in the middle of the screen
+// the mouse is on
+void Drop::placeFirstTime()
+{
+    QScreen* screen = QGuiApplication::screenAt(QCursor::pos());
+
+    if (!screen)
+    {
+        screen = QGuiApplication::primaryScreen();
+    }
+
+    QRect available = screen->availableGeometry();
+
+    int width = qMin(qRound(minimumSizeHint().width() * FirstWidthFactor), available.width());
+    int height = qMin(width, available.height());
+
+    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, QSize(width, height), available));
+}
+
+void Drop::closeEvent(QCloseEvent* event)
+{
+    QSettings().setValue(GeometryKey, saveGeometry());
+    QWidget::closeEvent(event);
 }
 
 void Drop::refreshCandidates()
@@ -306,6 +343,7 @@ int main(int argc, char* argv[])
     qputenv("QT_QPA_PLATFORM", "xcb");
 #endif
 
+    QCoreApplication::setOrganizationName(PROJECT_ORGANIZATION);
     QCoreApplication::setApplicationName(PROJECT_NAME);
     QCoreApplication::setApplicationVersion(PROJECT_VERSION);
 

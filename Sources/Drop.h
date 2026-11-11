@@ -25,6 +25,9 @@ class Drop : public QWidget
 public:
     Drop(QWidget* parent = nullptr);
 
+protected:
+    void closeEvent(QCloseEvent* event) override;
+
 private slots:
     void refreshCandidates();
     void restartWebServer();
@@ -37,6 +40,7 @@ private slots:
     void maybeNotifyComplete();
 
 private:
+    void placeFirstTime();
     void updateStatus();
     void setStatus(const QString& text);
 
