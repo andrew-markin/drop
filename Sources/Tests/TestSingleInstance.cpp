@@ -2,6 +2,10 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
+#include <QThread>
+
+#include <functional>
+#include <memory>
 
 #include "SingleInstance.h"
 
@@ -19,6 +23,7 @@ private slots:
 
 private:
     QString name(const QString& suffix = QString()) const;
+    bool runInThread(const std::function<bool()>& function);
 
 private:
     QTemporaryDir* m_temporaryDir = nullptr;
@@ -41,14 +46,36 @@ QString TestSingleInstance::name(const QString& suffix) const
     return QString("DropTest-%1-%2%3").arg(QCoreApplication::applicationPid()).arg(qintptr(m_temporaryDir)).arg(suffix);
 }
 
+// Another instance is another process in real life. On Windows a pipe write completes only once the
+// server reads, so the second instance runs in a thread while this one keeps the server going.
+bool TestSingleInstance::runInThread(const std::function<bool()>& function)
+{
+    bool result = false;
+    std::unique_ptr<QThread> thread(QThread::create([&result, function]() { result = function(); }));
+    thread->start();
+
+    bool finished = QTest::qWaitFor([&thread]() { return thread->isFinished(); }, 30000);
+
+    if (!finished)
+    {
+        thread->wait();
+    }
+
+    return finished && result;
+}
+
 void TestSingleInstance::secondInstanceActivatesFirst()
 {
     SingleInstance first(name(), m_temporaryDir->path());
     QSignalSpy activationSpy(&first, &SingleInstance::activationRequested);
     QVERIFY(first.start());
 
-    SingleInstance second(name(), m_temporaryDir->path());
-    QVERIFY(!second.start());
+    QString lockDirectory = m_temporaryDir->path();
+
+    QVERIFY(runInThread([this, lockDirectory]() {
+        SingleInstance second(name(), lockDirectory);
+        return !second.start();
+    }));
 
     QTRY_COMPARE(activationSpy.count(), 1);
 }
