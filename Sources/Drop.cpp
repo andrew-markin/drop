@@ -20,7 +20,7 @@
 #include <QVBoxLayout>
 
 #include "Crypto.h"
-#include "QrCodeWidget.h"
+#include "QrCodeDialog.h"
 #include "Translator.h"
 #include "Uploads.h"
 #include "WebServer.h"
@@ -62,10 +62,7 @@ Drop::Drop(QWidget* parent)
     m_uploads = new Uploads(QDir(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)),
                             Uploads::DefaultChunkSize, this);
 
-    m_qrCodeWidget = new QrCodeWidget(this);
-
     m_addressLabel = new QLabel(this);
-    m_addressLabel->setAlignment(Qt::AlignCenter);
     m_addressLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
     QFont addressFont = m_addressLabel->font();
@@ -74,15 +71,19 @@ Drop::Drop(QWidget* parent)
 
     // The link holds the secret, so it is copied whole rather than shown
     m_copyButton = new QPushButton(tr("Copy Link"), this);
-    m_copyButton->setToolTip(tr("Send the link to a device in a messenger, or scan the QR code with it"));
+    m_copyButton->setToolTip(tr("Send the link to a device in a messenger"));
     connect(m_copyButton, &QPushButton::clicked, this, &Drop::copyLink);
+
+    m_qrCodeButton = new QPushButton(tr("Show QR"), this);
+    m_qrCodeButton->setToolTip(tr("Scan the QR code with a phone"));
+    connect(m_qrCodeButton, &QPushButton::clicked, this, &Drop::showQrCode);
 
     m_networkComboBox = new QComboBox(this);
     connect(m_networkComboBox, &QComboBox::activated, this, &Drop::restartWebServer);
 
     m_statusLabel = new QLabel(this);
-    m_statusLabel->setAlignment(Qt::AlignCenter);
     m_statusLabel->setWordWrap(true);
+    m_statusLabel->hide();
 
     m_uploadsTreeWidget = new QTreeWidget(this);
     m_uploadsTreeWidget->setHeaderLabels({tr("Name"), tr("Size"), tr("Status")});
@@ -94,7 +95,6 @@ Drop::Drop(QWidget* parent)
     m_uploadsTreeWidget->header()->setSectionResizeMode(UploadNameColumn, QHeaderView::Stretch);
     m_uploadsTreeWidget->header()->setSectionResizeMode(UploadSizeColumn, QHeaderView::ResizeToContents);
     m_uploadsTreeWidget->header()->setSectionResizeMode(UploadStatusColumn, QHeaderView::ResizeToContents);
-    m_uploadsTreeWidget->hide();
 
     m_totalProgressBar = new QProgressBar(this);
     m_totalProgressBar->setRange(0, 1000);
@@ -137,21 +137,19 @@ Drop::Drop(QWidget* parent)
     networkLayout->addRow(tr("Network:"), m_networkComboBox);
     m_networkLabel = qobject_cast<QLabel*>(networkLayout->labelForField(m_networkComboBox));
 
-    QHBoxLayout* copyLayout = new QHBoxLayout();
-    copyLayout->addStretch();
-    copyLayout->addWidget(m_copyButton);
-    copyLayout->addStretch();
+    QHBoxLayout* linkLayout = new QHBoxLayout();
+    linkLayout->addWidget(m_addressLabel, 1);
+    linkLayout->addWidget(m_copyButton);
+    linkLayout->addWidget(m_qrCodeButton);
 
     QHBoxLayout* progressLayout = new QHBoxLayout();
     progressLayout->addWidget(m_totalProgressBar, 1);
     progressLayout->addWidget(m_openButton);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->addWidget(m_qrCodeWidget, 1);
-    layout->addWidget(m_addressLabel);
-    layout->addLayout(copyLayout);
-    layout->addWidget(m_statusLabel);
+    layout->addLayout(linkLayout);
     layout->addLayout(networkLayout);
+    layout->addWidget(m_statusLabel);
     layout->addWidget(m_uploadsTreeWidget, 1);
     layout->addLayout(progressLayout);
 
@@ -161,7 +159,7 @@ Drop::Drop(QWidget* parent)
     m_refreshTimer->start();
 
     refreshCandidates();
-    resize(440, 720);
+    resize(600, 480);
 }
 
 void Drop::refreshCandidates()
@@ -253,12 +251,12 @@ void Drop::showConnectionHint()
     }
 
 #if defined(Q_OS_WINDOWS)
-    m_statusLabel->setText(tr("The page does not open on the phone? Make sure the network is marked as private in "
-                              "Windows Settings, Network & internet: Windows Firewall lets devices connect to Drop "
-                              "on private networks only."));
+    setStatus(tr("The page does not open on the phone? Make sure the network is marked as private in "
+                 "Windows Settings, Network & internet: Windows Firewall lets devices connect to Drop "
+                 "on private networks only."));
 #else
-    m_statusLabel->setText(tr("The page does not open on the phone? Make sure it is on the same network as this "
-                              "computer, and that the firewall allows incoming connections."));
+    setStatus(tr("The page does not open on the phone? Make sure it is on the same network as this "
+                 "computer, and that the firewall allows incoming connections."));
 #endif
 }
 
@@ -273,6 +271,19 @@ void Drop::copyLink()
 
     m_copyButton->setText(tr("Copied"));
     QTimer::singleShot(CopiedFeedbackTimeout, m_copyButton, [this]() { m_copyButton->setText(tr("Copy Link")); });
+}
+
+void Drop::showQrCode()
+{
+    if (m_link.isEmpty())
+    {
+        return;
+    }
+
+    m_qrCodeDialog = new QrCodeDialog(this);
+    m_qrCodeDialog->setAttribute(Qt::WA_DeleteOnClose);
+    m_qrCodeDialog->setLink(m_link);
+    m_qrCodeDialog->open();
 }
 
 void Drop::openDropDirectory()
@@ -292,7 +303,6 @@ void Drop::addUpload(const QByteArray& id)
     item->setTextAlignment(UploadStatusColumn, Qt::AlignRight | Qt::AlignVCenter);
     m_uploadItems.insert(id, item);
 
-    m_uploadsTreeWidget->show();
     m_totalProgressBar->show();
 
     updateUpload(id);
@@ -374,14 +384,27 @@ void Drop::updateTotalProgress()
 
 void Drop::updateStatus()
 {
-    m_qrCodeWidget->setText(m_link);
     m_copyButton->setEnabled(!m_link.isEmpty());
+    m_qrCodeButton->setEnabled(!m_link.isEmpty());
+
+    // The code follows the server when it moves to another network, and goes away with it
+    if (m_qrCodeDialog)
+    {
+        if (m_link.isEmpty())
+        {
+            m_qrCodeDialog->close();
+        }
+        else
+        {
+            m_qrCodeDialog->setLink(m_link);
+        }
+    }
 
     if (!m_link.isEmpty())
     {
         m_addressLabel->setText(QString("http://%1:%2").arg(m_webServer->serverAddress().toString())
                                     .arg(m_webServer->serverPort()));
-        m_statusLabel->setText(tr("Scan the QR code with a phone connected to the same network."));
+        setStatus(QString());
 
         if (!m_requestReceived)
         {
@@ -391,14 +414,21 @@ void Drop::updateStatus()
     else if (m_candidates.isEmpty())
     {
         m_addressLabel->clear();
-        m_statusLabel->setText(tr("This computer is not connected to a local network. "
-                                  "Connect it to the same Wi-Fi or wired network as the devices."));
+        setStatus(tr("This computer is not connected to a local network. "
+                     "Connect it to the same Wi-Fi or wired network as the devices."));
     }
     else
     {
         m_addressLabel->clear();
-        m_statusLabel->setText(tr("Unable to start the server: %1").arg(m_webServer->errorString()));
+        setStatus(tr("Unable to start the server: %1").arg(m_webServer->errorString()));
     }
+}
+
+// Only problems are told, the rest of the time the space goes to the files
+void Drop::setStatus(const QString& text)
+{
+    m_statusLabel->setText(text);
+    m_statusLabel->setVisible(!text.isEmpty());
 }
 
 int main(int argc, char* argv[])

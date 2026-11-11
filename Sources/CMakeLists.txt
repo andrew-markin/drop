@@ -78,6 +78,8 @@ add_executable(
     Drop.h
     LocalNetwork.cpp
     LocalNetwork.h
+    QrCodeDialog.cpp
+    QrCodeDialog.h
     QrCodeWidget.cpp
     QrCodeWidget.h
     Resources.qrc

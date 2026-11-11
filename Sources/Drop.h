@@ -3,6 +3,7 @@
 
 #include <QHash>
 #include <QHostAddress>
+#include <QPointer>
 #include <QWidget>
 
 #include "LocalNetwork.h"
@@ -15,7 +16,7 @@ class QSystemTrayIcon;
 class QTimer;
 class QTreeWidget;
 class QTreeWidgetItem;
-class QrCodeWidget;
+class QrCodeDialog;
 class Uploads;
 class WebServer;
 
@@ -30,6 +31,7 @@ private slots:
     void refreshCandidates();
     void restartWebServer();
     void copyLink();
+    void showQrCode();
     void openDropDirectory();
 
     void addUpload(const QByteArray& id);
@@ -40,6 +42,7 @@ private slots:
 
 private:
     void updateStatus();
+    void setStatus(const QString& text);
     void updateTotalProgress();
 
 private:
@@ -51,9 +54,10 @@ private:
     WebServer* m_webServer;
     QString m_link;
 
-    QrCodeWidget* m_qrCodeWidget;
     QLabel* m_addressLabel;
     QPushButton* m_copyButton;
+    QPushButton* m_qrCodeButton;
+    QPointer<QrCodeDialog> m_qrCodeDialog;
     QLabel* m_networkLabel;
     QComboBox* m_networkComboBox;
     QLabel* m_statusLabel;

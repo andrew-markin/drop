@@ -94,9 +94,15 @@ void TestTranslator::otherLanguages()
 
 void TestTranslator::everythingIsTranslated()
 {
-    QFile file(DROP_TRANSLATED_SOURCE_PATH);
-    QVERIFY2(file.open(QIODevice::ReadOnly), DROP_TRANSLATED_SOURCE_PATH);
-    QString source = QString::fromUtf8(file.readAll());
+    QString source;
+
+    for (const char* name : {"Drop.cpp", "QrCodeDialog.cpp"})
+    {
+        QString path = QString("%1/%2").arg(DROP_SOURCE_DIR, name);
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly), qPrintable(path));
+        source += QString::fromUtf8(file.readAll());
+    }
 
     // tr("...") with adjacent literals joined, as the compiler does
     static const QRegularExpression callPattern("\\btr\\(\\s*((?:\"(?:[^\"\\\\]|\\\\.)*\"\\s*)+)");

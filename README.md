@@ -20,9 +20,10 @@ install on the phone: scan a QR code and pick the files.
 
 ## How to Use
 
-1. Start **Drop** on the computer. It shows a QR code and the address it listens at.
-2. Scan the QR code with a phone connected to the same Wi-Fi or wired network. To send the link
-   to a device without a camera, press **Copy Link** and send it in a messenger.
+1. Start **Drop** on the computer. It shows the address it listens at.
+2. Press **Show QR** and scan the QR code with a phone connected to the same Wi-Fi or wired
+   network. To send the link to a device without a camera, press **Copy Link** and send it in a
+   messenger.
 3. On the page that opens, press **Choose Files** and pick photos, videos or other files.
 4. Keep the page open until the files are sent. They appear in a `Drop-YYYY-MM-DD-N` folder in
    the Downloads folder of the computer; **Open Folder** shows it.

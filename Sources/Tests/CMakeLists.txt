@@ -88,7 +88,7 @@ add_drop_test(
     ${PROJECT_SOURCE_DIR}/Translator.h
 )
 
-target_compile_definitions(TestTranslator PRIVATE DROP_TRANSLATED_SOURCE_PATH="${PROJECT_SOURCE_DIR}/Drop.cpp")
+target_compile_definitions(TestTranslator PRIVATE DROP_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 
 # The server without the window, driven by the end-to-end tests of the web client in Web/e2e
 

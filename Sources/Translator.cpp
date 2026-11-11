@@ -22,16 +22,17 @@ const QHash<QString, QStringList>& getRussianTranslations()
     static const QHash<QString, QStringList> translations = {
         {"Copy Link", {"Копировать ссылку"}},
         {"Copied", {"Скопировано"}},
-        {"Send the link to a device in a messenger, or scan the QR code with it",
-         {"Отправьте ссылку на устройство в мессенджере или отсканируйте им QR-код"}},
+        {"Send the link to a device in a messenger", {"Отправьте ссылку на устройство в мессенджере"}},
+        {"Show QR", {"Показать QR"}},
+        {"Scan the QR code with a phone", {"Отсканируйте QR-код телефоном"}},
+        {"QR Code", {"QR-код"}},
         {"Name", {"Имя"}},
         {"Size", {"Размер"}},
         {"Status", {"Состояние"}},
         {"Done", {"Готово"}},
         {"Open Folder", {"Открыть папку"}},
         {"Network:", {"Сеть:"}},
-        {"Scan the QR code with a phone connected to the same network.",
-         {"Отсканируйте QR-код телефоном, подключённым к той же сети."}},
+        {"Scan with a phone on the same network", {"Отсканируйте телефоном в той же сети"}},
         {"This computer is not connected to a local network. "
          "Connect it to the same Wi-Fi or wired network as the devices.",
          {"Компьютер не подключён к локальной сети. "

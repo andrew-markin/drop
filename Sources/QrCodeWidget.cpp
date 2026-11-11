@@ -6,38 +6,45 @@
 
 namespace {
 
-static const int QuietZoneSize = 4; // Modules, as the standard requires
-static const int PreferredSize = 280;
+// Modules. The standard asks for 4, but phone cameras read the code with 2, and the dialog gives
+// the code more room this way.
+static const int QuietZoneSize = 2;
+// Big enough to scan from the screen at arm's length, small enough for any screen
+static const int PreferredSize = 420;
 
 } // namespace
 
 QrCodeWidget::QrCodeWidget(QWidget* parent) : QWidget(parent)
 {
-    QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    sizePolicy.setHeightForWidth(true);
-    setSizePolicy(sizePolicy);
-    setMinimumSize(160, 160);
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 }
 
 void QrCodeWidget::setText(const QString& text)
 {
     m_image = text.isEmpty() ? QImage() : makeImage(text);
+    updateGeometry();
     update();
 }
 
 QSize QrCodeWidget::sizeHint() const
 {
-    return QSize(PreferredSize, PreferredSize);
+    if (m_image.isNull())
+    {
+        return QSize(PreferredSize, PreferredSize);
+    }
+
+    int side = m_image.width() * scale();
+    return QSize(side, side);
 }
 
-bool QrCodeWidget::hasHeightForWidth() const
+QSize QrCodeWidget::minimumSizeHint() const
 {
-    return true;
+    return sizeHint();
 }
 
-int QrCodeWidget::heightForWidth(int width) const
+int QrCodeWidget::quietZoneWidth() const
 {
-    return width;
+    return m_image.isNull() ? 0 : QuietZoneSize * scale();
 }
 
 QImage QrCodeWidget::makeImage(const QString& text)
@@ -73,14 +80,16 @@ void QrCodeWidget::paintEvent(QPaintEvent* event)
         return;
     }
 
-    // Whole pixels per module, so every module is equally sharp
-    int side = qMin(width(), height());
-    int scale = qMax(1, side / m_image.width());
-    int imageSide = m_image.width() * scale;
-
+    int imageSide = m_image.width() * scale();
     QRect target((width() - imageSide) / 2, (height() - imageSide) / 2, imageSide, imageSide);
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, false);
     painter.drawImage(target, m_image);
+}
+
+int QrCodeWidget::scale() const
+{
+    // Whole pixels per module, so every module is equally sharp
+    return qMax(1, PreferredSize / m_image.width());
 }
