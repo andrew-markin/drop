@@ -6,8 +6,10 @@ export const RetryDelayMax = 30000 // 30s
 
 const sleep = (delay) => new Promise((resolve) => setTimeout(resolve, delay))
 
-// Sends picked files one after another in chunks, a few chunks at a time. Network failures are
-// retried for as long as the page is open, so a phone that lost Wi-Fi for a while just goes on.
+// Sends picked files one after another in chunks, a few chunks at a time. All picked files are
+// announced before the first one is sent, so the computer lists the whole drop from the start.
+// Network failures are retried for as long as the page is open, so a phone that lost Wi-Fi for a
+// while just goes on.
 export class Uploader {
   #api
   #onChange
@@ -51,7 +53,15 @@ export class Uploader {
     this.#running = true
     try {
       while (this.#queue.length > 0 && !this.stopped) {
-        await this.#upload(this.#queue.shift())
+        // Files added while busy are announced too before the next one is sent. A copy, as
+        // announcing takes failed and empty files out of the queue.
+        for (const item of this.#queue.filter((item) => !item.upload)) {
+          if (this.stopped) break
+          await this.#announce(item)
+        }
+
+        const item = this.#queue.shift()
+        if (item && !this.stopped) await this.#send(item)
       }
     } finally {
       this.#running = false
@@ -59,13 +69,13 @@ export class Uploader {
     }
   }
 
-  async #upload(item) {
+  async #announce(item) {
     try {
       item.status = 'preparing'
       this.#changed()
 
       const head = await computeHead(item.file)
-      const { file, chunk, received } = await this.#retrying(() =>
+      item.upload = await this.#retrying(() =>
         this.#api.announce({
           name: item.name,
           size: item.size,
@@ -74,10 +84,25 @@ export class Uploader {
         })
       )
 
-      const chunkCount = Math.ceil(item.size / chunk)
+      const { chunk, received } = item.upload
       const chunkSize = (index) => Math.min(chunk, item.size - index * chunk)
+      item.sent = received.reduce((sum, index) => sum + chunkSize(index), 0)
+
+      // An empty file is complete right after the announce, there is nothing to send
+      item.status = item.size === 0 ? 'done' : 'waiting'
+      if (item.size === 0) this.#queue.splice(this.#queue.indexOf(item), 1)
+    } catch (error) {
+      this.#queue.splice(this.#queue.indexOf(item), 1)
+      this.#fail(item, error)
+    }
+    this.#changed()
+  }
+
+  async #send(item) {
+    try {
+      const { file, chunk, received } = item.upload
+      const chunkCount = Math.ceil(item.size / chunk)
       const done = new Set(received)
-      item.sent = [...done].reduce((sum, index) => sum + chunkSize(index), 0)
       item.status = 'uploading'
       this.#changed()
 
@@ -110,12 +135,16 @@ export class Uploader {
 
       item.status = 'done'
     } catch (error) {
-      item.status = 'failed'
-      item.error = error
-      // Nothing else fits either once the disk is full
-      if (error.status === 507) this.stopped = error
+      this.#fail(item, error)
     }
     this.#changed()
+  }
+
+  #fail(item, error) {
+    item.status = 'failed'
+    item.error = error
+    // Nothing else fits either once the disk is full
+    if (error.status === 507) this.stopped = error
   }
 
   async #retrying(action) {

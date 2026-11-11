@@ -176,6 +176,10 @@ The answer:
 An empty file has no chunks: its `head` is the hash of nothing, and it is complete right after the
 announce.
 
+Announcing a file only registers it: apart from an empty file, the server writes nothing until a
+chunk comes. The web client announces all picked files before it sends the first one, so the computer lists the
+whole drop from the start and shows the files that are still to come.
+
 ### Send a chunk
 
 ```

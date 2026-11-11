@@ -11,9 +11,11 @@ class FakeServer {
     this.failures = [] // Errors to throw on the next calls, in order
     this.inFlight = 0
     this.maxInFlight = 0
+    this.calls = [] // Announced names and sent chunks, in order
   }
 
   async announce({ name, size, modified, head }) {
+    this.calls.push(`announce ${name}`)
     this.#maybeFail()
     const key = `${name}/${size}/${modified}/${head.join(',')}`
     if (!this.files.has(key)) {
@@ -23,6 +25,7 @@ class FakeServer {
   }
 
   async sendChunk(file, index, bytes) {
+    this.calls.push(`chunk ${this.files.get(file).name} ${index}`)
     this.inFlight++
     this.maxInFlight = Math.max(this.maxInFlight, this.inFlight)
     await Promise.resolve()
@@ -67,6 +70,22 @@ describe('Uploader', () => {
     expect(uploader.sentSize).toBe(12)
     expect(uploader.totalSize).toBe(12)
     expect(uploader.busy).toBe(false)
+  })
+
+  it('announces all files before sending any', async () => {
+    const server = new FakeServer()
+    const { uploader } = makeUploader(server)
+
+    await uploader.add([makeFile('a.txt', 'abc'), makeFile('b.txt', 'def'), makeFile('c.txt', 'ghi')])
+
+    expect(server.calls).toEqual([
+      'announce a.txt',
+      'announce b.txt',
+      'announce c.txt',
+      'chunk a.txt 0',
+      'chunk b.txt 0',
+      'chunk c.txt 0'
+    ])
   })
 
   it('keeps a few chunks in flight', async () => {
@@ -152,7 +171,8 @@ describe('Uploader', () => {
     const server = new FakeServer()
     const { uploader } = makeUploader(server)
 
-    server.failures = [undefined, new ApiError(507)]
+    // Both files are announced, the first chunk finds the disk full
+    server.failures = [undefined, undefined, new ApiError(507)]
     await uploader.add([makeFile('a.txt', 'abc'), makeFile('b.txt', 'def')])
 
     expect(uploader.items.map((item) => item.status)).toEqual(['failed', 'waiting'])
@@ -170,5 +190,9 @@ describe('Uploader', () => {
     // The second call returns right away, the first run picks the new file up
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(uploader.items.map((item) => item.status)).toEqual(['done', 'done'])
+    expect(server.calls.filter((call) => call.startsWith('announce'))).toEqual([
+      'announce a.txt',
+      'announce b.txt'
+    ])
   })
 })

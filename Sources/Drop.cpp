@@ -32,8 +32,8 @@ static const int RefreshCandidatesTimeout = 3000; // 3s
 
 static const int CopiedFeedbackTimeout = 1500; // 1.5s
 
-// A device announces the next file only after the previous one is done, so everything looks
-// complete between files for a moment. The drop is over when it stays so for a while.
+// A device announces all picked files at once, but more may be picked right after, or come from
+// another device. The drop is over when everything stays complete for a while.
 static const int CompleteQuietTimeout = 5000; // 5s
 
 enum UploadColumn
