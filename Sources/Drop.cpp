@@ -136,7 +136,9 @@ Drop::Drop(QWidget* parent)
     connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, [this]() { m_openButton->setEnabled(true); });
 
     // Only to tell when a drop is over: the application quits with its window
-    m_trayIcon = new QSystemTrayIcon(QApplication::windowIcon(), this);
+    // The SVG itself: the tray picks its size from the few Qt offers for it, as for other
+    // applications, while a full set of sizes made it pick a small one and look smaller than them
+    m_trayIcon = new QSystemTrayIcon(QIcon(":/Drop.svg"), this);
     m_trayIcon->setToolTip(PROJECT_TITLE);
     m_trayIcon->show();
 
