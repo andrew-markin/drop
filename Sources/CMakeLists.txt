@@ -61,8 +61,9 @@ target_compile_definitions(
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network HttpServer)
 
 # Notifications that can be clicked, see DesktopNotifier.h. Qt uses it for the tray icon there anyway.
+# The icon theme gets PNG files of the icon, rendered from the SVG, see Tools/IconRenderer.cpp.
 if(LINUX)
-    find_package(Qt6 REQUIRED COMPONENTS DBus)
+    find_package(Qt6 REQUIRED COMPONENTS DBus Svg)
 endif()
 
 # Third party libraries
@@ -144,6 +145,30 @@ if(WIN32)
     )
 elseif(LINUX)
     set(PROJECT_ICON "Drop.svg")
+
+    # The same sizes as IconSizes in Drop.cpp
+    set(PROJECT_ICON_SIZES 16 22 24 32 48 64 128 256)
+    set(PROJECT_ICONS_DIR "${CMAKE_CURRENT_BINARY_DIR}/Icons")
+
+    add_executable(IconRenderer Tools/IconRenderer.cpp)
+    target_link_libraries(IconRenderer PRIVATE Qt6::Gui Qt6::Svg)
+
+    set(PROJECT_ICON_FILES)
+
+    foreach(PROJECT_ICON_SIZE ${PROJECT_ICON_SIZES})
+        list(APPEND PROJECT_ICON_FILES "${PROJECT_ICONS_DIR}/${PROJECT_ICON_SIZE}/${PROJECT_NAME}.png")
+    endforeach()
+
+    add_custom_command(
+        OUTPUT ${PROJECT_ICON_FILES}
+        COMMAND IconRenderer "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_ICON}" "${PROJECT_ICONS_DIR}"
+                "${PROJECT_NAME}.png" ${PROJECT_ICON_SIZES}
+        DEPENDS IconRenderer "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_ICON}"
+        COMMENT "Rendering application icons"
+        VERBATIM
+    )
+
+    add_custom_target(Icons ALL DEPENDS ${PROJECT_ICON_FILES})
 endif()
 
 target_link_libraries(

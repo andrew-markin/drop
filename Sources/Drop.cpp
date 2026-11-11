@@ -47,6 +47,40 @@ static const int EstimateInterval = 1000; // 1s
 static const char* const GeometryKey = "Window/Geometry";
 static const qreal FirstWidthFactor = 1.1; // Of the minimum width
 
+// The sizes taskbars, docks and menus ask for. Also the ones installed into the icon theme on Linux,
+// see PROJECT_ICON_SIZES in CMakeLists.txt.
+static const QList<int> IconSizes = {16, 22, 24, 32, 48, 64, 128, 256};
+
+// Drawn from the SVG at each size: given only a few sizes, a taskbar scales the nearest one and
+// the thin outline goes blurry. Drawn in the pixels of the screens too, as Qt scales the sizes by
+// their scale factor, 16 becomes 20 at 125%.
+QIcon makeApplicationIcon(const QString& path)
+{
+    QIcon svgIcon(path);
+    QIcon icon;
+
+    QList<qreal> ratios = {1.0};
+    const QList<QScreen*> screens = QGuiApplication::screens();
+
+    for (const QScreen* screen : screens)
+    {
+        if (!ratios.contains(screen->devicePixelRatio()))
+        {
+            ratios.append(screen->devicePixelRatio());
+        }
+    }
+
+    for (qreal ratio : std::as_const(ratios))
+    {
+        for (int size : IconSizes)
+        {
+            icon.addPixmap(svgIcon.pixmap(QSize(size, size), ratio));
+        }
+    }
+
+    return icon;
+}
+
 QString describeCandidate(const LocalNetwork::Candidate& candidate)
 {
     return QString("%1 (%2)").arg(candidate.address.toString(), candidate.humanReadableName);
@@ -446,7 +480,7 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationVersion(PROJECT_VERSION);
 
     QApplication application(argc, argv);
-    QApplication::setWindowIcon(QIcon(":/Drop.svg"));
+    QApplication::setWindowIcon(makeApplicationIcon(":/Drop.svg"));
 
     Translator translator(QLocale::system());
     QApplication::installTranslator(&translator);

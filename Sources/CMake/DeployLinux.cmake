@@ -80,10 +80,21 @@ install(
     RENAME "${PROJECT_NAME}${PROJECT_ICON_EXT}"
 )
 
+# And as PNG files of the usual sizes, which icon themes prefer to scaling the SVG: a scaled thin
+# outline goes blurry in a taskbar
+
+foreach(PROJECT_ICON_SIZE ${PROJECT_ICON_SIZES})
+    install(
+        FILES "${PROJECT_ICONS_DIR}/${PROJECT_ICON_SIZE}/${PROJECT_NAME}.png"
+        DESTINATION "usr/share/icons/hicolor/${PROJECT_ICON_SIZE}x${PROJECT_ICON_SIZE}/apps"
+    )
+endforeach()
+
 # Configure and install desktop files
 
 set(DESKTOP_NAME "${PROJECT_TITLE}")
 set(DESKTOP_ICON "${PROJECT_NAME}")
+set(DESKTOP_WM_CLASS "${PROJECT_NAME}") # The class of the window, from the application name
 set(DESKTOP_APPLICATION_EXEC "/${PROJECT_EXECUTABLE}")
 set(DESKTOP_COMMENT "${PROJECT_DESCRIPTION}")
 set(DESKTOP_CATEGORIES "Network;FileTransfer;")
