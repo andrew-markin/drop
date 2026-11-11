@@ -19,6 +19,7 @@
 #include <QVBoxLayout>
 
 #include "Crypto.h"
+#include "DesktopNotifier.h"
 #include "NetworkComboBox.h"
 #include "QrCodeDialog.h"
 #include "Translator.h"
@@ -105,12 +106,8 @@ Drop::Drop(QWidget* parent)
     m_trayIcon->setToolTip(PROJECT_TITLE);
     m_trayIcon->show();
 
-    connect(m_trayIcon, &QSystemTrayIcon::messageClicked, this, &Drop::openDropDirectory);
-    connect(m_trayIcon, &QSystemTrayIcon::activated, this, [this]() {
-        showNormal();
-        raise();
-        activateWindow();
-    });
+    m_notifier = new DesktopNotifier(m_trayIcon, this);
+    connect(m_trayIcon, &QSystemTrayIcon::activated, this, &Drop::showWindow);
 
     m_completeTimer = new QTimer(this);
     m_completeTimer->setSingleShot(true);
@@ -274,6 +271,13 @@ void Drop::showQrCode()
     m_qrCodeDialog->open();
 }
 
+void Drop::showWindow()
+{
+    showNormal();
+    raise();
+    activateWindow();
+}
+
 void Drop::openDropDirectory()
 {
     QDesktopServices::openUrl(QUrl::fromLocalFile(m_uploads->dropDirectoryPath()));
@@ -302,10 +306,9 @@ void Drop::maybeNotifyNoSpace(const QByteArray& id)
 
     m_noSpaceNotified = true;
 
-    m_trayIcon->showMessage(tr("No space left on the disk"),
-                            tr("Drop can't receive more files. Free some space and pick the files on the device "
-                               "again."),
-                            QSystemTrayIcon::Warning);
+    m_notifier->notify(tr("No space left on the disk"),
+                       tr("Drop can't receive more files. Free some space and pick the files on the device again."),
+                       QSystemTrayIcon::Warning, tr("Show"), [this]() { showWindow(); });
     QApplication::alert(this);
 }
 
@@ -378,8 +381,8 @@ void Drop::maybeNotifyComplete()
 
     m_notifiedCount = completeCount;
 
-    m_trayIcon->showMessage(tr("Drop is complete"), tr("Received %n file(s). Click to open the folder.", "", newCount),
-                            QApplication::windowIcon());
+    m_notifier->notify(tr("Drop is complete"), tr("Received %n file(s). Click to open the folder.", "", newCount),
+                       QSystemTrayIcon::Information, tr("Open Folder"), [this]() { openDropDirectory(); });
     QApplication::alert(this);
 }
 

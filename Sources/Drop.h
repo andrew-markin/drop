@@ -13,6 +13,7 @@ class QLabel;
 class QPushButton;
 class QSystemTrayIcon;
 class QTimer;
+class DesktopNotifier;
 class QrCodeDialog;
 class Uploads;
 class UploadsEstimate;
@@ -35,6 +36,7 @@ private slots:
     void restartWebServer();
     void copyLink();
     void showQrCode();
+    void showWindow();
     void openDropDirectory();
 
     void scrollToUpload(const QByteArray& id);
@@ -69,6 +71,7 @@ private:
     QPushButton* m_openButton;
 
     QSystemTrayIcon* m_trayIcon;
+    DesktopNotifier* m_notifier;
     QTimer* m_completeTimer;
 
     UploadsEstimate* m_estimate;

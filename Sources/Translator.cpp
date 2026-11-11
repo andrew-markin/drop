@@ -43,6 +43,7 @@ const QHash<QString, QStringList>& getRussianTranslations()
         {"TB", {"ТБ"}},
         {"Open Folder", {"Открыть папку"}},
         {"Open", {"Открыть"}},
+        {"Show", {"Показать"}},
         {"Network: %1", {"Сеть: %1"}},
         {"Scan with a phone on the same network", {"Отсканируйте телефоном в той же сети"}},
         {"This computer is not connected to a local network. "

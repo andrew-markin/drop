@@ -60,6 +60,11 @@ target_compile_definitions(
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network HttpServer)
 
+# Notifications that can be clicked, see DesktopNotifier.h. Qt uses it for the tray icon there anyway.
+if(LINUX)
+    find_package(Qt6 REQUIRED COMPONENTS DBus)
+endif()
+
 # Third party libraries
 
 find_package(Sodium REQUIRED)
@@ -78,6 +83,8 @@ add_executable(
     Drop WIN32
     Crypto.cpp
     Crypto.h
+    DesktopNotifier.cpp
+    DesktopNotifier.h
     Drop.cpp
     Drop.h
     LocalNetwork.cpp
@@ -159,6 +166,10 @@ if (WIN32)
         MSVC_WCHAR_T_AS_BUILTIN_TYPE ON
     )
 elseif(LINUX)
+    target_link_libraries(
+        Drop PRIVATE
+        Qt6::DBus
+    )
     target_compile_options(
         Drop PRIVATE
         -march=x86-64
