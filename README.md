@@ -20,7 +20,7 @@ install on the phone: scan a QR code and pick the files.
 
 ## How to Use
 
-1. Start **Drop** on the computer. It shows the address it listens at.
+1. Start **Drop** on the computer. It shows the network it listens on.
 2. Press **Show QR** and scan the QR code with a phone connected to the same Wi-Fi or wired
    network. To send the link to a device without a camera, press **Copy Link** and send it in a
    messenger.

@@ -9,12 +9,10 @@ the release commit (Actions, the run, *Artifacts*).
 For each of Windows, Ubuntu and Fedora:
 
 - [ ] The package installs, Drop is in the start menu or the application list with its icon.
-- [ ] Drop starts, the address is in the local network (`192.168.x.x` or similar), not a Docker
-      or VPN one. **Show QR** shows a QR code.
+- [ ] Drop starts, the network is the local one (`192.168.x.x` or similar), not a Docker or VPN
+      one. **Show QR** shows a QR code.
 - [ ] Windows only: no firewall prompt on the first start, `netsh advfirewall firewall show rule
       name=Drop` lists a rule for private networks.
-- [ ] Windows only: on a network marked as public, the phone cannot open the page, and after a
-      minute Drop hints at making the network private.
 - [ ] The window and the notification are in Russian when the system language is Russian.
 - [ ] Uninstalling removes Drop (on Windows, the firewall rule too).
 

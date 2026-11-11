@@ -31,7 +31,7 @@ const QHash<QString, QStringList>& getRussianTranslations()
         {"Status", {"Состояние"}},
         {"Done", {"Готово"}},
         {"Open Folder", {"Открыть папку"}},
-        {"Network:", {"Сеть:"}},
+        {"Network: %1", {"Сеть: %1"}},
         {"Scan with a phone on the same network", {"Отсканируйте телефоном в той же сети"}},
         {"This computer is not connected to a local network. "
          "Connect it to the same Wi-Fi or wired network as the devices.",
@@ -39,15 +39,6 @@ const QHash<QString, QStringList>& getRussianTranslations()
           "Подключите его к той же сети Wi-Fi или проводной сети, что и устройства."}},
         {"Unable to start the server: %1", {"Не удалось запустить сервер: %1"}},
         {"Unable to initialize the cryptography library.", {"Не удалось инициализировать библиотеку криптографии."}},
-        {"The page does not open on the phone? Make sure the network is marked as private in "
-         "Windows Settings, Network & internet: Windows Firewall lets devices connect to Drop "
-         "on private networks only.",
-         {"Страница не открывается на телефоне? Проверьте, что сеть отмечена как частная в параметрах Windows, "
-          "раздел «Сеть и Интернет»: брандмауэр Windows пускает устройства к Drop только в частных сетях."}},
-        {"The page does not open on the phone? Make sure it is on the same network as this "
-         "computer, and that the firewall allows incoming connections.",
-         {"Страница не открывается на телефоне? Проверьте, что он в той же сети, что и компьютер, "
-          "и что брандмауэр разрешает входящие подключения."}},
         {"Drop is complete", {"Дроп завершён"}},
         {"Received %n file(s). Click to open the folder.",
          {"Получен %n файл. Нажмите, чтобы открыть папку.", "Получено %n файла. Нажмите, чтобы открыть папку.",

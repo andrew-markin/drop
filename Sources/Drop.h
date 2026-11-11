@@ -38,7 +38,6 @@ private slots:
     void updateUpload(const QByteArray& id);
 
     void maybeNotifyComplete();
-    void showConnectionHint();
 
 private:
     void updateStatus();
@@ -54,11 +53,9 @@ private:
     WebServer* m_webServer;
     QString m_link;
 
-    QLabel* m_addressLabel;
     QPushButton* m_copyButton;
     QPushButton* m_qrCodeButton;
     QPointer<QrCodeDialog> m_qrCodeDialog;
-    QLabel* m_networkLabel;
     QComboBox* m_networkComboBox;
     QLabel* m_statusLabel;
     QTimer* m_refreshTimer;
@@ -67,9 +64,6 @@ private:
     QHash<QByteArray, QTreeWidgetItem*> m_uploadItems;
     QProgressBar* m_totalProgressBar;
     QPushButton* m_openButton;
-
-    QTimer* m_hintTimer;
-    bool m_requestReceived;
 
     QSystemTrayIcon* m_trayIcon;
     QTimer* m_completeTimer;

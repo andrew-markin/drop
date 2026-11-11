@@ -5,7 +5,6 @@
 #include <QComboBox>
 #include <QDesktopServices>
 #include <QHeaderView>
-#include <QFormLayout>
 #include <QIcon>
 #include <QLabel>
 #include <QLocale>
@@ -20,6 +19,7 @@
 #include <QVBoxLayout>
 
 #include "Crypto.h"
+#include "NetworkComboBox.h"
 #include "QrCodeDialog.h"
 #include "Translator.h"
 #include "Uploads.h"
@@ -36,9 +36,6 @@ static const int CopiedFeedbackTimeout = 1500; // 1.5s
 // complete between files for a moment. The drop is over when it stays so for a while.
 static const int CompleteQuietTimeout = 5000; // 5s
 
-// Long enough to scan the QR code and for the page to load
-static const int ConnectionHintTimeout = 60000; // 1m
-
 enum UploadColumn
 {
     UploadNameColumn,
@@ -54,20 +51,12 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
 } // namespace
 
 Drop::Drop(QWidget* parent)
-    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_requestReceived(false),
-      m_notifiedCount(0)
+    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_notifiedCount(0)
 {
     setWindowTitle(PROJECT_TITLE);
 
     m_uploads = new Uploads(QDir(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)),
                             Uploads::DefaultChunkSize, this);
-
-    m_addressLabel = new QLabel(this);
-    m_addressLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
-
-    QFont addressFont = m_addressLabel->font();
-    addressFont.setPointSizeF(addressFont.pointSizeF() * 1.4);
-    m_addressLabel->setFont(addressFont);
 
     // The link holds the secret, so it is copied whole rather than shown
     m_copyButton = new QPushButton(tr("Copy Link"), this);
@@ -78,7 +67,7 @@ Drop::Drop(QWidget* parent)
     m_qrCodeButton->setToolTip(tr("Scan the QR code with a phone"));
     connect(m_qrCodeButton, &QPushButton::clicked, this, &Drop::showQrCode);
 
-    m_networkComboBox = new QComboBox(this);
+    m_networkComboBox = new NetworkComboBox(this);
     connect(m_networkComboBox, &QComboBox::activated, this, &Drop::restartWebServer);
 
     m_statusLabel = new QLabel(this);
@@ -121,11 +110,6 @@ Drop::Drop(QWidget* parent)
         activateWindow();
     });
 
-    m_hintTimer = new QTimer(this);
-    m_hintTimer->setSingleShot(true);
-    m_hintTimer->setInterval(ConnectionHintTimeout);
-    connect(m_hintTimer, &QTimer::timeout, this, &Drop::showConnectionHint);
-
     m_completeTimer = new QTimer(this);
     m_completeTimer->setSingleShot(true);
     m_completeTimer->setInterval(CompleteQuietTimeout);
@@ -133,12 +117,15 @@ Drop::Drop(QWidget* parent)
     connect(m_uploads, &Uploads::uploadAdded, m_completeTimer, qOverload<>(&QTimer::start));
     connect(m_uploads, &Uploads::uploadChanged, m_completeTimer, qOverload<>(&QTimer::start));
 
-    QFormLayout* networkLayout = new QFormLayout();
-    networkLayout->addRow(tr("Network:"), m_networkComboBox);
-    m_networkLabel = qobject_cast<QLabel*>(networkLayout->labelForField(m_networkComboBox));
+    // Styles make combo boxes and buttons a little different in height, in one row they fill it alike
+    for (QWidget* widget : {static_cast<QWidget*>(m_networkComboBox), static_cast<QWidget*>(m_copyButton),
+                            static_cast<QWidget*>(m_qrCodeButton)})
+    {
+        widget->setSizePolicy(widget->sizePolicy().horizontalPolicy(), QSizePolicy::Preferred);
+    }
 
     QHBoxLayout* linkLayout = new QHBoxLayout();
-    linkLayout->addWidget(m_addressLabel, 1);
+    linkLayout->addWidget(m_networkComboBox, 1);
     linkLayout->addWidget(m_copyButton);
     linkLayout->addWidget(m_qrCodeButton);
 
@@ -148,7 +135,6 @@ Drop::Drop(QWidget* parent)
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addLayout(linkLayout);
-    layout->addLayout(networkLayout);
     layout->addWidget(m_statusLabel);
     layout->addWidget(m_uploadsTreeWidget, 1);
     layout->addLayout(progressLayout);
@@ -203,9 +189,8 @@ void Drop::refreshCandidates()
     m_networkComboBox->addItems(descriptions);
     m_networkComboBox->setCurrentIndex(currentIndex);
 
-    // Choosing makes sense only when there is something to choose from
-    m_networkComboBox->setVisible(candidates.size() > 1);
-    m_networkLabel->setVisible(candidates.size() > 1);
+    // Shown even with one network, it tells which one devices have to join
+    m_networkComboBox->setEnabled(!candidates.isEmpty());
 
     if (candidates.value(currentIndex).address != currentAddress || currentAddress.isNull())
     {
@@ -225,14 +210,6 @@ void Drop::restartWebServer()
     {
         m_webServer = new WebServer(":/Web", m_uploads, m_secret, this);
 
-        connect(m_webServer, &WebServer::requestReceived, this, [this]() {
-            if (!m_requestReceived)
-            {
-                m_requestReceived = true;
-                updateStatus();
-            }
-        });
-
         // A new random port every time, so a busy port is never a problem
         if (m_webServer->start(m_candidates.at(index).address))
         {
@@ -241,23 +218,6 @@ void Drop::restartWebServer()
     }
 
     updateStatus();
-}
-
-void Drop::showConnectionHint()
-{
-    if (m_requestReceived || m_link.isEmpty())
-    {
-        return;
-    }
-
-#if defined(Q_OS_WINDOWS)
-    setStatus(tr("The page does not open on the phone? Make sure the network is marked as private in "
-                 "Windows Settings, Network & internet: Windows Firewall lets devices connect to Drop "
-                 "on private networks only."));
-#else
-    setStatus(tr("The page does not open on the phone? Make sure it is on the same network as this "
-                 "computer, and that the firewall allows incoming connections."));
-#endif
 }
 
 void Drop::copyLink()
@@ -402,24 +362,15 @@ void Drop::updateStatus()
 
     if (!m_link.isEmpty())
     {
-        m_addressLabel->setText(QString("http://%1:%2").arg(m_webServer->serverAddress().toString())
-                                    .arg(m_webServer->serverPort()));
         setStatus(QString());
-
-        if (!m_requestReceived)
-        {
-            m_hintTimer->start();
-        }
     }
     else if (m_candidates.isEmpty())
     {
-        m_addressLabel->clear();
         setStatus(tr("This computer is not connected to a local network. "
                      "Connect it to the same Wi-Fi or wired network as the devices."));
     }
     else
     {
-        m_addressLabel->clear();
         setStatus(tr("Unable to start the server: %1").arg(m_webServer->errorString()));
     }
 }
