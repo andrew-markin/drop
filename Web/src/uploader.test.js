@@ -76,7 +76,11 @@ describe('Uploader', () => {
     const server = new FakeServer()
     const { uploader } = makeUploader(server)
 
-    await uploader.add([makeFile('a.txt', 'abc'), makeFile('b.txt', 'def'), makeFile('c.txt', 'ghi')])
+    await uploader.add([
+      makeFile('a.txt', 'abc'),
+      makeFile('b.txt', 'def'),
+      makeFile('c.txt', 'ghi')
+    ])
 
     expect(server.calls).toEqual([
       'announce a.txt',
