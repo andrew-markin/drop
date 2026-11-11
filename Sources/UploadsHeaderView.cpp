@@ -2,19 +2,13 @@
 
 #include <QPainter>
 
+#include "Colors.h"
 #include "UploadsDelegate.h"
 
 namespace {
 
 // How far the background goes from the rows towards the text: a tint, so it works in any theme
 static const qreal BackgroundTint = 0.08;
-
-QColor mix(const QColor& from, const QColor& to, qreal amount)
-{
-    return QColor::fromRgbF(from.redF() + (to.redF() - from.redF()) * amount,
-                            from.greenF() + (to.greenF() - from.greenF()) * amount,
-                            from.blueF() + (to.blueF() - from.blueF()) * amount);
-}
 
 } // namespace
 
@@ -27,7 +21,7 @@ UploadsHeaderView::UploadsHeaderView(QWidget* parent) : QHeaderView(Qt::Horizont
 
 QColor UploadsHeaderView::backgroundColor(const QPalette& palette)
 {
-    return mix(palette.color(QPalette::Base), palette.color(QPalette::Text), BackgroundTint);
+    return Colors::mix(palette.color(QPalette::Base), palette.color(QPalette::Text), BackgroundTint);
 }
 
 QSize UploadsHeaderView::sizeHint() const

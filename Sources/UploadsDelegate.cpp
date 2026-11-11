@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QPainter>
 
+#include "Colors.h"
 #include "UploadsModel.h"
 
 namespace {
@@ -12,22 +13,6 @@ namespace {
 // on a plain row, of the highlighted text color on a selected one, which is the same tone turned over
 static const qreal ProgressOpacity = 0.35;
 static const qreal SelectedProgressOpacity = 0.25;
-
-// Progress is green and errors are red whatever the theme, as a red selection color would mix them
-// up. Saturation and lightness come from the selection color, so they suit the theme, within limits
-// for a gray or a too dark or light one.
-static const qreal ProgressHue = 120.0 / 360;
-static const qreal ErrorHue = 0.0;
-static const qreal MinimumSaturation = 0.45;
-static const qreal MinimumLightness = 0.35;
-static const qreal MaximumLightness = 0.6;
-
-QColor withHue(const QColor& color, qreal hue)
-{
-    QColor hsl = color.toHsl();
-    return QColor::fromHslF(float(hue), float(qMax(hsl.hslSaturationF(), MinimumSaturation)),
-                            float(qBound(MinimumLightness, qreal(hsl.lightnessF()), MaximumLightness)));
-}
 
 // Of the text of a file that is announced but has nothing on the computer yet: it may never come
 static const qreal PendingOpacity = 0.5;
@@ -74,9 +59,9 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 
         if (!filledRect.isEmpty())
         {
-            QColor highlight = option.palette.color(colorGroup, QPalette::Highlight);
             QColor color = selected ? option.palette.color(colorGroup, QPalette::HighlightedText)
-                                    : withHue(highlight, failed ? ErrorHue : ProgressHue);
+                           : failed ? Colors::error(option.palette, colorGroup)
+                                    : Colors::progress(option.palette, colorGroup);
             color.setAlphaF((selected ? SelectedProgressOpacity : ProgressOpacity) * afterglow);
             painter->fillRect(filledRect, color);
         }
@@ -95,12 +80,11 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     }
 
     painter->setFont(option.font);
-    QColor errorColor = withHue(option.palette.color(colorGroup, QPalette::Highlight), ErrorHue);
     QColor textColor = option.palette.color(colorGroup, selected ? QPalette::HighlightedText : QPalette::Text);
 
     if (failed && !selected && index.column() == UploadsModel::StatusColumn)
     {
-        textColor = errorColor;
+        textColor = Colors::error(option.palette, colorGroup);
     }
 
     painter->setPen(textColor);

@@ -6,7 +6,6 @@
 #include <QCursor>
 #include <QDesktopServices>
 #include <QIcon>
-#include <QLabel>
 #include <QPushButton>
 #include <QScreen>
 #include <QSettings>
@@ -18,6 +17,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include "AlertWidget.h"
 #include "Crypto.h"
 #include "DesktopNotifier.h"
 #include "NetworkComboBox.h"
@@ -74,9 +74,8 @@ Drop::Drop(QWidget* parent)
     m_networkComboBox = new NetworkComboBox(this);
     connect(m_networkComboBox, &QComboBox::activated, this, &Drop::restartWebServer);
 
-    m_statusLabel = new QLabel(this);
-    m_statusLabel->setWordWrap(true);
-    m_statusLabel->hide();
+    // Under the table, so the buttons above stay where they are
+    m_alertWidget = new AlertWidget(this);
 
     m_uploadsModel = new UploadsModel(m_uploads, this);
     m_uploadsView = new UploadsView(m_uploadsModel, this);
@@ -131,8 +130,8 @@ Drop::Drop(QWidget* parent)
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addLayout(linkLayout);
-    layout->addWidget(m_statusLabel);
     layout->addWidget(m_uploadsView, 1);
+    layout->addWidget(m_alertWidget);
 
     m_refreshTimer = new QTimer(this);
     m_refreshTimer->setInterval(RefreshCandidatesTimeout);
@@ -427,8 +426,7 @@ void Drop::updateStatus()
 // Only problems are told, the rest of the time the space goes to the files
 void Drop::setStatus(const QString& text)
 {
-    m_statusLabel->setText(text);
-    m_statusLabel->setVisible(!text.isEmpty());
+    m_alertWidget->setText(text);
 }
 
 int main(int argc, char* argv[])

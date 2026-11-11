@@ -8,8 +8,8 @@
 
 #include "LocalNetwork.h"
 
+class AlertWidget;
 class QComboBox;
-class QLabel;
 class QPushButton;
 class QSystemTrayIcon;
 class QTimer;
@@ -63,7 +63,7 @@ private:
     QPushButton* m_qrCodeButton;
     QPointer<QrCodeDialog> m_qrCodeDialog;
     QComboBox* m_networkComboBox;
-    QLabel* m_statusLabel;
+    AlertWidget* m_alertWidget;
     QTimer* m_refreshTimer;
 
     UploadsModel* m_uploadsModel;

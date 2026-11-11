@@ -81,6 +81,10 @@ add_subdirectory(ThirdParty/QrCodeGen)
 
 add_executable(
     Drop WIN32
+    AlertWidget.cpp
+    AlertWidget.h
+    Colors.cpp
+    Colors.h
     Crypto.cpp
     Crypto.h
     DesktopNotifier.cpp
