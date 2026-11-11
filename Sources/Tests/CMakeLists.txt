@@ -15,6 +15,12 @@ function(add_drop_test TEST_NAME)
 endfunction()
 
 add_drop_test(
+    TestSingleInstance
+    ${PROJECT_SOURCE_DIR}/SingleInstance.cpp
+    ${PROJECT_SOURCE_DIR}/SingleInstance.h
+)
+
+add_drop_test(
     TestStorage
     ${PROJECT_SOURCE_DIR}/Storage.cpp
     ${PROJECT_SOURCE_DIR}/Storage.h

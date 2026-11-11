@@ -99,6 +99,8 @@ add_executable(
     QrCodeDialog.h
     QrCodeWidget.cpp
     QrCodeWidget.h
+    SingleInstance.cpp
+    SingleInstance.h
     Resources.qrc
     Storage.cpp
     Storage.h

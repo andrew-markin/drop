@@ -28,6 +28,9 @@ class Drop : public QWidget
 public:
     Drop(QWidget* parent = nullptr);
 
+public slots:
+    void showWindow();
+
 protected:
     void closeEvent(QCloseEvent* event) override;
 
@@ -36,7 +39,6 @@ private slots:
     void restartWebServer();
     void copyLink();
     void showQrCode();
-    void showWindow();
     void openDropDirectory();
 
     void scrollToUpload(const QByteArray& id);

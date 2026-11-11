@@ -22,6 +22,7 @@
 #include "DesktopNotifier.h"
 #include "NetworkComboBox.h"
 #include "QrCodeDialog.h"
+#include "SingleInstance.h"
 #include "Translator.h"
 #include "Uploads.h"
 #include "UploadsEstimate.h"
@@ -273,11 +274,16 @@ void Drop::showQrCode()
     m_qrCodeDialog->open();
 }
 
+// Out of the taskbar if minimized, as large as it was otherwise
 void Drop::showWindow()
 {
-    showNormal();
+    setWindowState(windowState() & ~Qt::WindowMinimized);
+    show();
     raise();
     activateWindow();
+
+    // Some window managers keep other applications from taking the focus, the taskbar tells then
+    QApplication::alert(this);
 }
 
 void Drop::openDropDirectory()
@@ -445,6 +451,14 @@ int main(int argc, char* argv[])
     Translator translator(QLocale::system());
     QApplication::installTranslator(&translator);
 
+    // A second start brings up the window of the first one
+    SingleInstance singleInstance(SingleInstance::defaultName(), SingleInstance::defaultLockDirectory());
+
+    if (!singleInstance.start())
+    {
+        return EXIT_SUCCESS;
+    }
+
     if (!Crypto::init())
     {
         QMessageBox::critical(nullptr, PROJECT_TITLE, QObject::tr("Unable to initialize the cryptography library."));
@@ -453,6 +467,8 @@ int main(int argc, char* argv[])
 
     Drop drop;
     drop.show();
+
+    QObject::connect(&singleInstance, &SingleInstance::activationRequested, &drop, &Drop::showWindow);
 
     return application.exec();
 }
