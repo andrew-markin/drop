@@ -141,6 +141,12 @@ Drop::Drop(QWidget* parent)
 
     refreshCandidates();
 
+    // With no network at the start there is no change to notice, the window still has to tell it
+    if (!m_webServer)
+    {
+        updateStatus();
+    }
+
     // Where it was left last time, Qt keeps it on the screens there are now
     if (!restoreGeometry(QSettings().value(GeometryKey).toByteArray()))
     {
@@ -213,9 +219,6 @@ void Drop::refreshCandidates()
     m_networkComboBox->clear();
     m_networkComboBox->addItems(descriptions);
     m_networkComboBox->setCurrentIndex(currentIndex);
-
-    // Shown even with one network, it tells which one devices have to join
-    m_networkComboBox->setEnabled(!candidates.isEmpty());
 
     if (candidates.value(currentIndex).address != currentAddress || currentAddress.isNull())
     {
@@ -388,6 +391,8 @@ void Drop::maybeNotifyComplete()
 
 void Drop::updateStatus()
 {
+    // Shown even with one network, it tells which one devices have to join
+    m_networkComboBox->setEnabled(!m_candidates.isEmpty());
     m_copyButton->setEnabled(!m_link.isEmpty());
     m_qrCodeButton->setEnabled(!m_link.isEmpty());
 
