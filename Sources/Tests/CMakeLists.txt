@@ -45,6 +45,12 @@ add_drop_test(
 )
 
 add_drop_test(
+    TestUploadsEstimate
+    ${PROJECT_SOURCE_DIR}/UploadsEstimate.cpp
+    ${PROJECT_SOURCE_DIR}/UploadsEstimate.h
+)
+
+add_drop_test(
     TestWebServer
     ${PROJECT_SOURCE_DIR}/Crypto.cpp
     ${PROJECT_SOURCE_DIR}/Crypto.h

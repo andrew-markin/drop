@@ -96,7 +96,7 @@ void TestTranslator::everythingIsTranslated()
 {
     QString source;
 
-    for (const char* name : {"Drop.cpp", "NetworkComboBox.cpp", "QrCodeDialog.cpp", "UploadsModel.cpp", "UploadsView.cpp"})
+    for (const char* name : {"Drop.cpp", "NetworkComboBox.cpp", "QrCodeDialog.cpp", "UploadsEstimate.cpp", "UploadsModel.cpp", "UploadsView.cpp"})
     {
         QString path = QString("%1/%2").arg(DROP_SOURCE_DIR, name);
         QFile file(path);

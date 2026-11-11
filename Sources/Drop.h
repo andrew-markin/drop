@@ -1,6 +1,7 @@
 #ifndef DROP_H
 #define DROP_H
 
+#include <QElapsedTimer>
 #include <QHostAddress>
 #include <QPointer>
 #include <QWidget>
@@ -14,6 +15,7 @@ class QSystemTrayIcon;
 class QTimer;
 class QrCodeDialog;
 class Uploads;
+class UploadsEstimate;
 class UploadsModel;
 class UploadsView;
 class WebServer;
@@ -38,6 +40,7 @@ private slots:
     void scrollToUpload(const QByteArray& id);
 
     void maybeNotifyComplete();
+    void updateEstimate();
     void maybeNotifyNoSpace(const QByteArray& id);
 
 private:
@@ -67,6 +70,10 @@ private:
 
     QSystemTrayIcon* m_trayIcon;
     QTimer* m_completeTimer;
+
+    UploadsEstimate* m_estimate;
+    QElapsedTimer m_clock;
+    QTimer* m_estimateTimer;
     int m_notifiedCount;
     bool m_noSpaceNotified;
 };

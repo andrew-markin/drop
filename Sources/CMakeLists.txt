@@ -97,6 +97,8 @@ add_executable(
     Uploads.h
     UploadsDelegate.cpp
     UploadsDelegate.h
+    UploadsEstimate.cpp
+    UploadsEstimate.h
     UploadsHeaderView.cpp
     UploadsHeaderView.h
     UploadsModel.cpp

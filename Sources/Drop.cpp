@@ -23,6 +23,7 @@
 #include "QrCodeDialog.h"
 #include "Translator.h"
 #include "Uploads.h"
+#include "UploadsEstimate.h"
 #include "UploadsModel.h"
 #include "UploadsView.h"
 #include "WebServer.h"
@@ -37,6 +38,9 @@ static const int CopiedFeedbackTimeout = 1500; // 1.5s
 // A device announces all picked files at once, but more may be picked right after, or come from
 // another device. The drop is over when everything stays complete for a while.
 static const int CompleteQuietTimeout = 5000; // 5s
+
+// Often enough to notice a stalled drop, the estimate itself changes what it shows rarely
+static const int EstimateInterval = 1000; // 1s
 
 static const char* const GeometryKey = "Window/Geometry";
 static const qreal FirstWidthFactor = 1.1; // Of the minimum width
@@ -84,6 +88,16 @@ Drop::Drop(QWidget* parent)
     // The table follows the file being received, files only announced just add up at the bottom
     connect(m_uploads, &Uploads::uploadChanged, this, &Drop::scrollToUpload);
     connect(m_uploads, &Uploads::uploadChanged, this, &Drop::maybeNotifyNoSpace);
+
+    // In the title, so the taskbar or the dock tells it too
+    m_estimate = new UploadsEstimate(this);
+    m_clock.start();
+
+    m_estimateTimer = new QTimer(this);
+    m_estimateTimer->setInterval(EstimateInterval);
+    connect(m_estimateTimer, &QTimer::timeout, this, &Drop::updateEstimate);
+    connect(m_uploads, &Uploads::uploadAdded, this, &Drop::updateEstimate);
+    connect(m_uploads, &Uploads::uploadChanged, this, &Drop::updateEstimate);
     connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, [this]() { m_openButton->setEnabled(true); });
 
     // Only to tell when a drop is over: the application quits with its window
@@ -293,6 +307,51 @@ void Drop::maybeNotifyNoSpace(const QByteArray& id)
                                "again."),
                             QSystemTrayIcon::Warning);
     QApplication::alert(this);
+}
+
+void Drop::updateEstimate()
+{
+    qint64 totalSize = 0;
+    qint64 receivedSize = 0;
+
+    const QList<Uploads::Upload> uploads = m_uploads->uploads();
+
+    for (const Uploads::Upload& upload : uploads)
+    {
+        // A file that does not fit will not come, it would hold the drop back forever
+        if (!upload.complete && upload.error == Uploads::Error::NoSpace)
+        {
+            continue;
+        }
+
+        totalSize += upload.size;
+        receivedSize += upload.receivedSize(m_uploads->chunkSize());
+    }
+
+    m_estimate->update(m_clock.elapsed(), totalSize, receivedSize);
+
+    if (!m_estimate->isActive())
+    {
+        m_estimateTimer->stop();
+        setWindowTitle(PROJECT_TITLE);
+        return;
+    }
+
+    if (!m_estimateTimer->isActive())
+    {
+        m_estimateTimer->start();
+    }
+
+    // The progress first: a narrow taskbar button cuts the end of the title
+    QString progress = QString("%1%").arg(m_estimate->percent());
+    QString remaining = m_estimate->remainingText();
+
+    if (!remaining.isEmpty())
+    {
+        progress = QString("%1 – %2").arg(progress, remaining);
+    }
+
+    setWindowTitle(QString("%1 – %2").arg(progress, PROJECT_TITLE));
 }
 
 void Drop::maybeNotifyComplete()
