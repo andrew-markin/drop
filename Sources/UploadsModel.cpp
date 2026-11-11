@@ -55,7 +55,7 @@ QStringList UploadsModel::reservedTexts(int column)
         // Photos and videos from a phone, from kilobytes to a few gigabytes
         return {formatSize(Q_INT64_C(999000000)), formatSize(Q_INT64_C(9900000000))};
     case StatusColumn:
-        return {"100%", tr("Done")};
+        return {"100%", tr("Done"), tr("No space"), tr("Failed")};
     }
 
     return {};
@@ -101,11 +101,36 @@ QVariant UploadsModel::data(const QModelIndex& index, int role) const
                 return tr("Done");
             }
 
+            if (upload.error == Uploads::Error::NoSpace)
+            {
+                return tr("No space");
+            }
+
+            if (upload.error == Uploads::Error::Failed)
+            {
+                return tr("Failed");
+            }
+
             return QString("%1%").arg(int(data(index, ProgressRole).toDouble() * 100));
         }
         break;
 
     case Qt::ToolTipRole:
+        if (index.column() == StatusColumn && !upload.complete)
+        {
+            // The device retries a failed write but stops when the disk is full
+            if (upload.error == Uploads::Error::NoSpace)
+            {
+                return tr("There is no space left on the disk of this computer. Free some space and pick the "
+                          "files on the device again.");
+            }
+
+            if (upload.error == Uploads::Error::Failed)
+            {
+                return tr("Unable to write the file to the disk of this computer. The device keeps trying.");
+            }
+        }
+
         // Where to find the file once it is there
         return index.column() == NameColumn ? (upload.complete ? upload.path : upload.name) : QVariant();
 
@@ -126,6 +151,9 @@ QVariant UploadsModel::data(const QModelIndex& index, int role) const
 
     case PathRole:
         return upload.path;
+
+    case ErrorRole:
+        return !upload.complete && upload.error != Uploads::Error::None;
 
     case AfterglowRole:
     {

@@ -38,6 +38,7 @@ private slots:
     void scrollToUpload(const QByteArray& id);
 
     void maybeNotifyComplete();
+    void maybeNotifyNoSpace(const QByteArray& id);
 
 private:
     void placeFirstTime();
@@ -67,6 +68,7 @@ private:
     QSystemTrayIcon* m_trayIcon;
     QTimer* m_completeTimer;
     int m_notifiedCount;
+    bool m_noSpaceNotified;
 };
 
 #endif // DROP_H

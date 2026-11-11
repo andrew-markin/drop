@@ -49,7 +49,8 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
 } // namespace
 
 Drop::Drop(QWidget* parent)
-    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_notifiedCount(0)
+    : QWidget(parent), m_secret(Crypto::randomBytes(Crypto::SecretSize)), m_webServer(nullptr), m_notifiedCount(0),
+      m_noSpaceNotified(false)
 {
     setWindowTitle(PROJECT_TITLE);
 
@@ -82,6 +83,7 @@ Drop::Drop(QWidget* parent)
 
     // The table follows the file being received, files only announced just add up at the bottom
     connect(m_uploads, &Uploads::uploadChanged, this, &Drop::scrollToUpload);
+    connect(m_uploads, &Uploads::uploadChanged, this, &Drop::maybeNotifyNoSpace);
     connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, [this]() { m_openButton->setEnabled(true); });
 
     // Only to tell when a drop is over: the application quits with its window
@@ -266,6 +268,31 @@ void Drop::openDropDirectory()
 void Drop::scrollToUpload(const QByteArray& id)
 {
     m_uploadsView->scrollTo(m_uploadsModel->indexOf(id));
+}
+
+// The device stops sending when the disk is full, so the window may be the only place to learn it
+void Drop::maybeNotifyNoSpace(const QByteArray& id)
+{
+    Uploads::Error error = m_uploads->upload(id).error;
+
+    if (error == Uploads::Error::None)
+    {
+        m_noSpaceNotified = false; // Space was freed, a full disk again is news again
+        return;
+    }
+
+    if (error != Uploads::Error::NoSpace || m_noSpaceNotified)
+    {
+        return;
+    }
+
+    m_noSpaceNotified = true;
+
+    m_trayIcon->showMessage(tr("No space left on the disk"),
+                            tr("Drop can't receive more files. Free some space and pick the files on the device "
+                               "again."),
+                            QSystemTrayIcon::Warning);
+    QApplication::alert(this);
 }
 
 void Drop::maybeNotifyComplete()

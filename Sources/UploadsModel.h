@@ -28,6 +28,7 @@ public:
         CompleteRole,
         PathRole, // Final once complete, empty until the first chunk
         AfterglowRole, // From 1 when the file is just complete down to 0 a moment later
+        ErrorRole, // The last chunk could not be written here
     };
 
     // The full progress stays a moment after a file is complete, so it is seen among small files

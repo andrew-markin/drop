@@ -38,6 +38,8 @@ public:
         int receivedCount = 0;
         bool complete = false;
         QString path; // Temporary until complete, then final
+        Error error = Error::None; // Of the last chunk written, NoSpace or Failed: the trouble is here
+
 
         qint64 receivedSize(qint64 chunkSize) const;
     };
@@ -60,6 +62,7 @@ signals:
     void uploadChanged(const QByteArray& id);
 
 private:
+    Error storeChunk(Upload& upload, int index, const QByteArray& data);
     Error ensureDropDirectory();
     Error complete(Upload& upload);
     Error describeWriteFailure(qint64 neededSize) const;

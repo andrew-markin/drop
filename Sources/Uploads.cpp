@@ -129,6 +129,25 @@ Uploads::Error Uploads::writeChunk(const QByteArray& id, int index, const QByteA
         return Error::BadRequest;
     }
 
+    int receivedCount = upload.receivedCount;
+    bool complete = upload.complete;
+    Error lastError = upload.error;
+
+    Error error = storeChunk(upload, index, data);
+    upload.error = error;
+
+    if (upload.receivedCount != receivedCount || upload.complete != complete || upload.error != lastError)
+    {
+        emit uploadChanged(id);
+    }
+
+    return error;
+}
+
+Uploads::Error Uploads::storeChunk(Upload& upload, int index, const QByteArray& data)
+{
+    qint64 offset = qint64(index) * m_chunkSize;
+
     if (upload.received.testBit(index))
     {
         // Retried after a lost answer, already written. Completion may have failed last time.
@@ -144,7 +163,8 @@ Uploads::Error Uploads::writeChunk(const QByteArray& id, int index, const QByteA
 
     if (upload.path.isEmpty())
     {
-        upload.path = QDir(m_dropDirectoryPath).filePath(QString(".drop-%1.part").arg(QString::fromLatin1(id.toHex())));
+        upload.path =
+            QDir(m_dropDirectoryPath).filePath(QString(".drop-%1.part").arg(QString::fromLatin1(upload.id.toHex())));
     }
 
     QFile file(upload.path);
@@ -161,18 +181,7 @@ Uploads::Error Uploads::writeChunk(const QByteArray& id, int index, const QByteA
     upload.received.setBit(index);
     upload.receivedCount++;
 
-    if (upload.receivedCount == upload.chunkCount)
-    {
-        error = complete(upload);
-
-        if (error != Error::None)
-        {
-            return error;
-        }
-    }
-
-    emit uploadChanged(id);
-    return Error::None;
+    return upload.receivedCount == upload.chunkCount ? complete(upload) : Error::None;
 }
 
 bool Uploads::contains(const QByteArray& id) const

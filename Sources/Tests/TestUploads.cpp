@@ -47,6 +47,7 @@ private slots:
 
     void receivedSize();
     void emitsSignals();
+    void remembersWriteErrors();
 
 private:
     QTemporaryDir* m_temporaryDir = nullptr;
@@ -270,6 +271,32 @@ void TestUploads::emitsSignals()
 
     QCOMPARE(directorySpy.count(), 1);
     QCOMPARE(directorySpy.at(0).at(0).toString(), m_uploads->dropDirectoryPath());
+    QCOMPARE(changedSpy.count(), 2);
+}
+
+void TestUploads::remembersWriteErrors()
+{
+    // A file where the base directory should be, so the drop directory cannot be made
+    QFile blocker(m_temporaryDir->filePath("Downloads"));
+    QVERIFY(blocker.open(QIODevice::WriteOnly));
+    blocker.close();
+
+    Uploads::Error error;
+    QByteArray id = m_uploads->announce("a.txt", 6, 0, makeHead(), &error);
+    QSignalSpy changedSpy(m_uploads, &Uploads::uploadChanged);
+
+    QCOMPARE(m_uploads->writeChunk(id, 0, "0123"), Uploads::Error::Failed);
+    QCOMPARE(m_uploads->upload(id).error, Uploads::Error::Failed);
+    QCOMPARE(changedSpy.count(), 1);
+
+    // The same error again is no news
+    QCOMPARE(m_uploads->writeChunk(id, 0, "0123"), Uploads::Error::Failed);
+    QCOMPARE(changedSpy.count(), 1);
+
+    // A write that works clears it
+    QVERIFY(blocker.remove());
+    QCOMPARE(m_uploads->writeChunk(id, 0, "0123"), Uploads::Error::None);
+    QCOMPARE(m_uploads->upload(id).error, Uploads::Error::None);
     QCOMPARE(changedSpy.count(), 2);
 }
 

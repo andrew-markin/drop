@@ -13,9 +13,11 @@ namespace {
 static const qreal ProgressOpacity = 0.35;
 static const qreal SelectedProgressOpacity = 0.25;
 
-// Progress is green whatever the theme, saturation and lightness come from the selection color, so
-// it suits the theme, within limits for a gray or a too dark or light one
+// Progress is green and errors are red whatever the theme, as a red selection color would mix them
+// up. Saturation and lightness come from the selection color, so they suit the theme, within limits
+// for a gray or a too dark or light one.
 static const qreal ProgressHue = 120.0 / 360;
+static const qreal ErrorHue = 0.0;
 static const qreal MinimumSaturation = 0.45;
 static const qreal MinimumLightness = 0.35;
 static const qreal MaximumLightness = 0.6;
@@ -57,6 +59,7 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 
     double progress = index.data(UploadsModel::ProgressRole).toDouble();
     bool complete = index.data(UploadsModel::CompleteRole).toBool();
+    bool failed = index.data(UploadsModel::ErrorRole).toBool();
 
     // One bar across the whole row: each cell fills its own part of it
     const QAbstractItemView* view = qobject_cast<const QAbstractItemView*>(option.widget);
@@ -73,7 +76,7 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
         {
             QColor highlight = option.palette.color(colorGroup, QPalette::Highlight);
             QColor color = selected ? option.palette.color(colorGroup, QPalette::HighlightedText)
-                                    : withHue(highlight, ProgressHue);
+                                    : withHue(highlight, failed ? ErrorHue : ProgressHue);
             color.setAlphaF((selected ? SelectedProgressOpacity : ProgressOpacity) * afterglow);
             painter->fillRect(filledRect, color);
         }
@@ -86,13 +89,21 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     Qt::TextElideMode elideMode = index.column() == UploadsModel::NameColumn ? Qt::ElideMiddle : Qt::ElideRight;
     QString text = option.fontMetrics.elidedText(index.data().toString(), elideMode, textRect.width());
 
-    if (!complete && progress == 0)
+    if (!complete && progress == 0 && !failed)
     {
         painter->setOpacity(PendingOpacity);
     }
 
     painter->setFont(option.font);
-    painter->setPen(option.palette.color(colorGroup, selected ? QPalette::HighlightedText : QPalette::Text));
+    QColor errorColor = withHue(option.palette.color(colorGroup, QPalette::Highlight), ErrorHue);
+    QColor textColor = option.palette.color(colorGroup, selected ? QPalette::HighlightedText : QPalette::Text);
+
+    if (failed && !selected && index.column() == UploadsModel::StatusColumn)
+    {
+        textColor = errorColor;
+    }
+
+    painter->setPen(textColor);
     painter->drawText(textRect, int(alignment), text);
 
     painter->restore();

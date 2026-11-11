@@ -1,3 +1,4 @@
+#include <QFile>
 #include <QSignalSpy>
 #include <QTemporaryDir>
 #include <QTest>
@@ -29,6 +30,7 @@ private slots:
     void addsRows();
     void followsProgress();
     void afterglow();
+    void writeError();
     void headers();
     void formatSize_data();
     void formatSize();
@@ -149,6 +151,24 @@ void TestUploadsModel::afterglow()
     int count = changedSpy.count();
     QTest::qWait(100);
     QCOMPARE(changedSpy.count(), count);
+}
+
+void TestUploadsModel::writeError()
+{
+    QFile blocker(m_temporaryDir->filePath("Downloads"));
+    QVERIFY(blocker.open(QIODevice::WriteOnly));
+    blocker.close();
+
+    QByteArray id = announce("a.txt", 6);
+    UploadsModel model(m_uploads);
+    QModelIndex status = model.indexOf(id, UploadsModel::StatusColumn);
+
+    QVERIFY(!status.data(UploadsModel::ErrorRole).toBool());
+    QCOMPARE(m_uploads->writeChunk(id, 0, "0123"), Uploads::Error::Failed);
+
+    QVERIFY(status.data(UploadsModel::ErrorRole).toBool());
+    QCOMPARE(status.data().toString(), "Failed");
+    QVERIFY(!status.data(Qt::ToolTipRole).toString().isEmpty());
 }
 
 void TestUploadsModel::headers()
