@@ -4,16 +4,13 @@
 #include <QClipboard>
 #include <QComboBox>
 #include <QDesktopServices>
-#include <QHeaderView>
 #include <QIcon>
 #include <QLabel>
-#include <QLocale>
 #include <QPushButton>
 #include <QMessageBox>
 #include <QStandardPaths>
 #include <QSystemTrayIcon>
 #include <QTimer>
-#include <QTreeWidget>
 #include <QUrl>
 #include <QVBoxLayout>
 
@@ -22,6 +19,8 @@
 #include "QrCodeDialog.h"
 #include "Translator.h"
 #include "Uploads.h"
+#include "UploadsModel.h"
+#include "UploadsView.h"
 #include "WebServer.h"
 
 namespace {
@@ -34,13 +33,6 @@ static const int CopiedFeedbackTimeout = 1500; // 1.5s
 // A device announces all picked files at once, but more may be picked right after, or come from
 // another device. The drop is over when everything stays complete for a while.
 static const int CompleteQuietTimeout = 5000; // 5s
-
-enum UploadColumn
-{
-    UploadNameColumn,
-    UploadSizeColumn,
-    UploadStatusColumn,
-};
 
 QString describeCandidate(const LocalNetwork::Candidate& candidate)
 {
@@ -73,24 +65,16 @@ Drop::Drop(QWidget* parent)
     m_statusLabel->setWordWrap(true);
     m_statusLabel->hide();
 
-    m_uploadsTreeWidget = new QTreeWidget(this);
-    m_uploadsTreeWidget->setHeaderLabels({tr("Name"), tr("Size"), tr("Status")});
-    m_uploadsTreeWidget->setRootIsDecorated(false);
-    m_uploadsTreeWidget->setUniformRowHeights(true);
-    m_uploadsTreeWidget->setSelectionMode(QAbstractItemView::NoSelection);
-    m_uploadsTreeWidget->setFocusPolicy(Qt::NoFocus);
-    m_uploadsTreeWidget->header()->setStretchLastSection(false);
-    m_uploadsTreeWidget->header()->setSectionResizeMode(UploadNameColumn, QHeaderView::Stretch);
-    m_uploadsTreeWidget->header()->setSectionResizeMode(UploadSizeColumn, QHeaderView::ResizeToContents);
-    m_uploadsTreeWidget->header()->setSectionResizeMode(UploadStatusColumn, QHeaderView::ResizeToContents);
+    m_uploadsModel = new UploadsModel(m_uploads, this);
+    m_uploadsView = new UploadsView(m_uploadsModel, this);
 
     // There from the start, so the row does not change when the folder appears with the first file
     m_openButton = new QPushButton(tr("Open Folder"), this);
     m_openButton->setEnabled(false);
     connect(m_openButton, &QPushButton::clicked, this, &Drop::openDropDirectory);
 
-    connect(m_uploads, &Uploads::uploadAdded, this, &Drop::addUpload);
-    connect(m_uploads, &Uploads::uploadChanged, this, &Drop::updateUpload);
+    // The table follows the file being received, files only announced just add up at the bottom
+    connect(m_uploads, &Uploads::uploadChanged, this, &Drop::scrollToUpload);
     connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, [this]() { m_openButton->setEnabled(true); });
 
     // Only to tell when a drop is over: the application quits with its window
@@ -128,7 +112,7 @@ Drop::Drop(QWidget* parent)
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addLayout(linkLayout);
     layout->addWidget(m_statusLabel);
-    layout->addWidget(m_uploadsTreeWidget, 1);
+    layout->addWidget(m_uploadsView, 1);
 
     m_refreshTimer = new QTimer(this);
     m_refreshTimer->setInterval(RefreshCandidatesTimeout);
@@ -242,44 +226,9 @@ void Drop::openDropDirectory()
     QDesktopServices::openUrl(QUrl::fromLocalFile(m_uploads->dropDirectoryPath()));
 }
 
-void Drop::addUpload(const QByteArray& id)
+void Drop::scrollToUpload(const QByteArray& id)
 {
-    Uploads::Upload upload = m_uploads->upload(id);
-
-    QTreeWidgetItem* item = new QTreeWidgetItem(m_uploadsTreeWidget);
-    item->setText(UploadNameColumn, upload.name);
-    item->setToolTip(UploadNameColumn, upload.name);
-    item->setText(UploadSizeColumn, QLocale().formattedDataSize(upload.size, 1, QLocale::DataSizeSIFormat));
-    item->setTextAlignment(UploadSizeColumn, Qt::AlignRight | Qt::AlignVCenter);
-    item->setTextAlignment(UploadStatusColumn, Qt::AlignRight | Qt::AlignVCenter);
-    m_uploadItems.insert(id, item);
-
-    updateUpload(id);
-}
-
-void Drop::updateUpload(const QByteArray& id)
-{
-    QTreeWidgetItem* item = m_uploadItems.value(id);
-
-    if (!item)
-    {
-        return;
-    }
-
-    Uploads::Upload upload = m_uploads->upload(id);
-
-    if (upload.complete)
-    {
-        item->setText(UploadStatusColumn, tr("Done"));
-        item->setToolTip(UploadNameColumn, upload.path);
-    }
-    else
-    {
-        qint64 percent = upload.size > 0 ? upload.receivedSize(m_uploads->chunkSize()) * 100 / upload.size : 0;
-        item->setText(UploadStatusColumn, QString("%1%").arg(percent));
-    }
-
-    m_uploadsTreeWidget->scrollToItem(item);
+    m_uploadsView->scrollTo(m_uploadsModel->indexOf(id));
 }
 
 void Drop::maybeNotifyComplete()

@@ -91,6 +91,14 @@ add_executable(
     Translator.h
     Uploads.cpp
     Uploads.h
+    UploadsDelegate.cpp
+    UploadsDelegate.h
+    UploadsHeaderView.cpp
+    UploadsHeaderView.h
+    UploadsModel.cpp
+    UploadsModel.h
+    UploadsView.cpp
+    UploadsView.h
     WebServer.cpp
     WebServer.h
 )

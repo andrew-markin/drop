@@ -1,7 +1,6 @@
 #ifndef DROP_H
 #define DROP_H
 
-#include <QHash>
 #include <QHostAddress>
 #include <QPointer>
 #include <QWidget>
@@ -13,10 +12,10 @@ class QLabel;
 class QPushButton;
 class QSystemTrayIcon;
 class QTimer;
-class QTreeWidget;
-class QTreeWidgetItem;
 class QrCodeDialog;
 class Uploads;
+class UploadsModel;
+class UploadsView;
 class WebServer;
 
 class Drop : public QWidget
@@ -33,8 +32,7 @@ private slots:
     void showQrCode();
     void openDropDirectory();
 
-    void addUpload(const QByteArray& id);
-    void updateUpload(const QByteArray& id);
+    void scrollToUpload(const QByteArray& id);
 
     void maybeNotifyComplete();
 
@@ -58,8 +56,8 @@ private:
     QLabel* m_statusLabel;
     QTimer* m_refreshTimer;
 
-    QTreeWidget* m_uploadsTreeWidget;
-    QHash<QByteArray, QTreeWidgetItem*> m_uploadItems;
+    UploadsModel* m_uploadsModel;
+    UploadsView* m_uploadsView;
     QPushButton* m_openButton;
 
     QSystemTrayIcon* m_trayIcon;

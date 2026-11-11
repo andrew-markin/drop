@@ -35,6 +35,16 @@ add_drop_test(
 )
 
 add_drop_test(
+    TestUploadsModel
+    ${PROJECT_SOURCE_DIR}/Storage.cpp
+    ${PROJECT_SOURCE_DIR}/Storage.h
+    ${PROJECT_SOURCE_DIR}/Uploads.cpp
+    ${PROJECT_SOURCE_DIR}/Uploads.h
+    ${PROJECT_SOURCE_DIR}/UploadsModel.cpp
+    ${PROJECT_SOURCE_DIR}/UploadsModel.h
+)
+
+add_drop_test(
     TestWebServer
     ${PROJECT_SOURCE_DIR}/Crypto.cpp
     ${PROJECT_SOURCE_DIR}/Crypto.h
