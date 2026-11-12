@@ -120,10 +120,9 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
 
-import { Api } from '@/api'
+import { Api, readEarlier } from '@/api'
 import { keepAwake } from '@/awake'
 import { readSecret } from '@/crypto'
-import { readEarlier, withoutPicked } from '@/earlier'
 import { useI18n } from '@/i18n'
 import { Uploader } from '@/uploader'
 import { formatSize } from '@/utils'
@@ -161,7 +160,12 @@ const uploader = new Uploader(api, {
 const state = shallowRef(snapshot(uploader))
 
 const earlier = shallowRef([])
-const visibleEarlier = computed(() => withoutPicked(earlier.value, state.value.items))
+// Picked again on this page, they show with the files being sent instead
+const visibleEarlier = computed(() =>
+  earlier.value.filter(
+    (file) => !state.value.items.some((item) => item.name === file.name && item.size === file.size)
+  )
+)
 const statusError = shallowRef()
 
 // After a reload the page shows what already reached the computer, and a wrong link shows at once

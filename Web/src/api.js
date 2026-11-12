@@ -29,6 +29,17 @@ export class ApiError extends Error {
   }
 }
 
+// Files the computer received in this drop before the page was loaded: from an earlier load of
+// the page, or from other devices. See "Status" in docs/PROTOCOL.md.
+export function readEarlier({ chunk, files }) {
+  return files.map(({ name, size, received, complete }) => ({
+    name,
+    size,
+    sent: complete ? size : Math.min(size, received * chunk),
+    complete
+  }))
+}
+
 export class Api {
   #secret
   #fetch
