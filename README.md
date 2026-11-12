@@ -4,6 +4,14 @@
 your computer over the local network. No cables, no cloud, no internet access, and nothing to
 install on the phone: scan a QR code and pick the files.
 
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Assets/Window-Dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="Assets/Window-Light.png">
+    <img alt="The window of Drop on the computer receiving files" src="Assets/Window-Light.png" width="690" height="427">
+  </picture>
+</div>
+
 ## Features
 
 - **Nothing to install on devices:** the computer serves a small web page, any modern browser
@@ -21,6 +29,8 @@ install on the phone: scan a QR code and pick the files.
   drop is complete.
 
 ## How to Use
+
+<img align="right" alt="The page on the phone sending files" src="Assets/Page.png" width="200" height="389">
 
 1. Start **Drop** on the computer. The list at the top of the window shows the network devices
    have to join. If the computer is on several networks, for example on Wi-Fi and on a wired one,
@@ -142,6 +152,18 @@ CMake. Packages are built the same way as in CI:
   `QT_PREFIX` and `VCPKG_ROOT` in `.env`, and run `ReleaseWindows.cmd`.
 
 Packages appear in the `Release` folder.
+
+### README Screenshots
+
+Screenshots in `Assets` are taken automatically: the window in a VirtualBox VM with Ubuntu GNOME
+desktop, the page in headless Google Chrome on the host sending files to it:
+
+    ./TakeScreenshots.sh
+
+The script runs the latest `.deb` package from the `Release` folder in the VM (or the package
+passed as an argument) without installing it, captures the window in light and dark themes and
+the page during one drop, and updates the image size in README. One-time VM preparation is
+described at the top of the script.
 
 ## License
 
