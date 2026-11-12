@@ -104,7 +104,7 @@
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
 
 import { Api, readEarlier } from '@/api'
-import { keepAwake } from '@/awake'
+import { keepAwake, keepAwakeOnTap } from '@/awake'
 import FileCard from '@/components/FileCard.vue'
 import { readSecret } from '@/crypto'
 import { useI18n } from '@/i18n'
@@ -162,7 +162,7 @@ async function loadEarlier() {
 }
 
 function choose() {
-  keepAwake(true) // Needs the tap, see awake.js
+  keepAwakeOnTap() // Needs the tap, see awake.js
   input.value.click()
 }
 
