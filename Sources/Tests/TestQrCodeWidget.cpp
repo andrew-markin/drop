@@ -13,7 +13,7 @@ private slots:
 
 void TestQrCodeWidget::makeImage()
 {
-    QImage image = QrCodeWidget::makeImage("http://192.168.0.5:54246/#k=AAgQGCAoMDhASFBYYGhweICIkJigqLC4wMjQ2ODo8Pg");
+    QImage image = QrCodeWidget::makeImage("http://192.168.0.5:54246/#AAgQGCAoMDhASFBYYGhweICIkJigqLC4wMjQ2ODo8Pg");
 
     QCOMPARE(image.width(), image.height());
 

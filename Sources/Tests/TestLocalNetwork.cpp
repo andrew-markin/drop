@@ -215,7 +215,7 @@ void TestLocalNetwork::makeLink()
     }
 
     QCOMPARE(LocalNetwork::makeLink(QHostAddress("192.168.0.5"), 54246, secret),
-             "http://192.168.0.5:54246/#k=AAgQGCAoMDhASFBYYGhweICIkJigqLC4wMjQ2ODo8Pg");
+             "http://192.168.0.5:54246/#AAgQGCAoMDhASFBYYGhweICIkJigqLC4wMjQ2ODo8Pg");
 }
 
 QTEST_GUILESS_MAIN(TestLocalNetwork)

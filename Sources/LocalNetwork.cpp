@@ -181,7 +181,7 @@ bool looksVirtual(const Candidate& candidate)
 QString makeLink(const QHostAddress& address, quint16 port, const QByteArray& secret)
 {
     QByteArray encodedSecret = secret.toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals);
-    return QString("http://%1:%2/#k=%3").arg(address.toString()).arg(port).arg(QString::fromLatin1(encodedSecret));
+    return QString("http://%1:%2/#%3").arg(address.toString()).arg(port).arg(QString::fromLatin1(encodedSecret));
 }
 
 } // namespace LocalNetwork

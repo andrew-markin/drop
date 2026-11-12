@@ -70,7 +70,7 @@ vectors = {
         'requestNonce': b64(request_nonce),
         'answerNonce': b64(answer_nonce),
     },
-    'link': 'http://192.168.0.5:54246/#k=' + b64(k),
+    'link': 'http://192.168.0.5:54246/#' + b64(k),
     'clientPublicKey': b64(cp),
     'serverPublicKey': b64(sp),
     'hello': b64(hello),

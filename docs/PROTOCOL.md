@@ -49,11 +49,11 @@ On every start the server generates a random 32-byte secret `k`. It never leaves
 the network, it is only shown to the user inside the link:
 
 ```
-http://192.168.0.5:54246/#k=<base64url(k)>
+http://192.168.0.5:54246/#<base64url(k)>
 ```
 
-The browser never sends the fragment (the part after `#`) to the server. The page reads `k` from
-`location.hash` and keeps it for the lifetime of the tab, so reloading the page keeps it too.
+The fragment (the part after `#`) is the whole encoded secret, nothing else. The browser never
+sends it to the server. The page reads `k` from `location.hash` and keeps it for the lifetime of the tab, so reloading the page keeps it too.
 
 Every server start uses a new `k`, a new port and a new drop directory.
 

@@ -27,10 +27,9 @@ export const HeadSize = 32
 export const randomBytes = (size) => crypto.getRandomValues(new Uint8Array(size))
 
 // The link secret comes in the URL fragment, which the browser never sends over the network:
-// http://192.168.0.5:54246/#k=<base64url(k)>
+// http://192.168.0.5:54246/#<base64url(k)>
 export function readSecret(hash) {
-  const params = new URLSearchParams(hash.replace(/^#/, ''))
-  const secret = fromBase64Url(params.get('k') ?? '')
+  const secret = fromBase64Url(hash.replace(/^#/, ''))
   return secret?.length === SecretLength ? secret : undefined
 }
 
