@@ -2,7 +2,9 @@
 
 #include <QAbstractItemView>
 #include <QApplication>
+#include <QFontMetricsF>
 #include <QPainter>
+#include <QtMath>
 
 #include "Colors.h"
 #include "UploadsModel.h"
@@ -22,6 +24,11 @@ static const qreal PendingOpacity = 0.5;
 UploadsDelegate::UploadsDelegate(QObject* parent) : QStyledItemDelegate(parent)
 {
     // Nothing
+}
+
+int UploadsDelegate::cellWidth(const QFont& font, const QString& text)
+{
+    return qCeil(QFontMetricsF(font).horizontalAdvance(text)) + 2 * HorizontalPadding;
 }
 
 void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -95,7 +102,7 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 
 QSize UploadsDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-    int width = option.fontMetrics.horizontalAdvance(index.data().toString()) + 2 * HorizontalPadding;
+    int width = cellWidth(option.font, index.data().toString());
     int height = option.fontMetrics.height() + 2 * VerticalPadding;
     return QSize(width, height);
 }

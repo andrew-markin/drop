@@ -176,7 +176,7 @@ void UploadsView::fitColumns(int firstRow, int lastRow)
 
 int UploadsView::textWidth(const QString& text) const
 {
-    return fontMetrics().horizontalAdvance(text) + 2 * UploadsDelegate::HorizontalPadding;
+    return UploadsDelegate::cellWidth(font(), text);
 }
 
 void UploadsView::paintEvent(QPaintEvent* event)

@@ -62,5 +62,5 @@ void UploadsHeaderView::paintSection(QPainter* painter, const QRect& rect, int l
 QSize UploadsHeaderView::sectionSizeFromContents(int logicalIndex) const
 {
     QString text = model() ? model()->headerData(logicalIndex, orientation()).toString() : QString();
-    return QSize(fontMetrics().horizontalAdvance(text) + 2 * UploadsDelegate::HorizontalPadding, sizeHint().height());
+    return QSize(UploadsDelegate::cellWidth(font(), text), sizeHint().height());
 }

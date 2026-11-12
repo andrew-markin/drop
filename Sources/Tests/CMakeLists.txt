@@ -58,6 +58,29 @@ add_drop_test(
 )
 
 add_drop_test(
+    TestUploadsView
+    ${PROJECT_SOURCE_DIR}/Colors.cpp
+    ${PROJECT_SOURCE_DIR}/Colors.h
+    ${PROJECT_SOURCE_DIR}/Storage.cpp
+    ${PROJECT_SOURCE_DIR}/Storage.h
+    ${PROJECT_SOURCE_DIR}/Uploads.cpp
+    ${PROJECT_SOURCE_DIR}/Uploads.h
+    ${PROJECT_SOURCE_DIR}/UploadsDelegate.cpp
+    ${PROJECT_SOURCE_DIR}/UploadsDelegate.h
+    ${PROJECT_SOURCE_DIR}/UploadsHeaderView.cpp
+    ${PROJECT_SOURCE_DIR}/UploadsHeaderView.h
+    ${PROJECT_SOURCE_DIR}/UploadsModel.cpp
+    ${PROJECT_SOURCE_DIR}/UploadsModel.h
+    ${PROJECT_SOURCE_DIR}/UploadsView.cpp
+    ${PROJECT_SOURCE_DIR}/UploadsView.h
+)
+
+target_link_libraries(TestUploadsView PRIVATE Qt6::Widgets)
+
+# No windows are shown, the view only lays itself out
+set_tests_properties(TestUploadsView PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)
+
+add_drop_test(
     TestUploadsEstimate
     ${PROJECT_SOURCE_DIR}/UploadsEstimate.cpp
     ${PROJECT_SOURCE_DIR}/UploadsEstimate.h

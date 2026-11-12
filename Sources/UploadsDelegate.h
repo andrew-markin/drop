@@ -15,6 +15,10 @@ public:
 
     UploadsDelegate(QObject* parent = nullptr);
 
+    // Of a cell or a title with the text whole: the text is measured to a fraction of a pixel and
+    // rounded up, as drawing cuts it when it is wider than the room by any fraction
+    static int cellWidth(const QFont& font, const QString& text);
+
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 };
