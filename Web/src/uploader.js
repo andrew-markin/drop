@@ -1,4 +1,4 @@
-import { computeHead } from '@/head'
+import { computeHead } from '@/crypto'
 
 export const ChunksInFlight = 3
 export const RetryDelayMin = 1000 // 1s

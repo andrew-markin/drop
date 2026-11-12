@@ -13,7 +13,7 @@ import {
   randomBytes,
   seal
 } from '@/crypto'
-import { fromBase64Url, toBase64Url } from '@/encoding'
+import { fromBase64Url, toBase64Url } from '@/utils'
 
 const encode = (value) => new TextEncoder().encode(JSON.stringify(value))
 const decode = (bytes) => JSON.parse(new TextDecoder().decode(bytes))

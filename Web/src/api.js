@@ -10,7 +10,7 @@ import {
   open,
   seal
 } from '@/crypto'
-import { fromBase64Url, toBase64Url } from '@/encoding'
+import { fromBase64Url, toBase64Url } from '@/utils'
 
 // A request hangs rather than fails when Wi-Fi drops, a chunk takes seconds even on a slow network
 export const RequestTimeout = 60000 // 1m

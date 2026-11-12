@@ -1,8 +1,11 @@
+import { blake2b } from '@noble/hashes/blake2.js'
 import { describe, expect, it } from 'vitest'
 
 import {
+  computeHead,
   computeShared,
   deriveSessionKeys,
+  HeadSampleSize,
   makeAnswerAd,
   makeConfirmAd,
   makeHelloProof,
@@ -10,10 +13,12 @@ import {
   makeRequestAd,
   open,
   randomBytes,
+  readSecret,
   seal,
-  SealOverhead
+  SealOverhead,
+  SecretLength
 } from '@/crypto'
-import { fromBase64Url } from '@/encoding'
+import { fromBase64Url, toBase64Url } from '@/utils'
 
 import vectors from '../../docs/vectors/protocol.json'
 
@@ -95,5 +100,51 @@ describe('seal and open', () => {
       tampered[index] ^= 1
       expect(open(key, tampered, text('ad'))).toBeUndefined()
     }
+  })
+})
+
+describe('readSecret', () => {
+  const secret = Uint8Array.from({ length: SecretLength }, (_, index) => index * 7)
+  const encoded = toBase64Url(secret)
+
+  it('reads the secret from the fragment', () => {
+    expect(readSecret(`#k=${encoded}`)).toEqual(secret)
+    expect(readSecret(`k=${encoded}`)).toEqual(secret)
+  })
+
+  it('ignores other parameters', () => {
+    expect(readSecret(`#x=1&k=${encoded}&y=2`)).toEqual(secret)
+  })
+
+  it('rejects a missing, malformed or wrong length secret', () => {
+    expect(readSecret('')).toBeUndefined()
+    expect(readSecret('#')).toBeUndefined()
+    expect(readSecret('#k=')).toBeUndefined()
+    expect(readSecret(`#k=${encoded}=`)).toBeUndefined()
+    expect(readSecret(`#k=${encoded.slice(0, -2)}`)).toBeUndefined()
+    expect(readSecret(`#k=${toBase64Url(new Uint8Array(SecretLength + 1))}`)).toBeUndefined()
+  })
+})
+
+describe('computeHead', () => {
+  it('hashes nothing for an empty file', async () => {
+    // BLAKE2b-256 of the empty string, the same value libsodium gives
+    const head = await computeHead(new Blob([]))
+    expect(toBase64Url(head)).toBe('DldRwCblQ7Loqy6wYJnaodHl30d3j3eH-qtFzfEv46g')
+  })
+
+  it('hashes a short file whole', async () => {
+    const bytes = new TextEncoder().encode('hello')
+    expect(await computeHead(new Blob([bytes]))).toEqual(blake2b(bytes, { dkLen: 32 }))
+  })
+
+  it('hashes only the first MiB of a long file', async () => {
+    const bytes = Uint8Array.from({ length: HeadSampleSize + 10 }, (_, index) => index % 251)
+    const head = await computeHead(new Blob([bytes]))
+    expect(head).toEqual(blake2b(bytes.subarray(0, HeadSampleSize), { dkLen: 32 }))
+
+    // Changes after the first MiB do not count
+    bytes[HeadSampleSize + 5] ^= 1
+    expect(await computeHead(new Blob([bytes]))).toEqual(head)
   })
 })

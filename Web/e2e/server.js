@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { createInterface } from 'node:readline'
 
-import { readSecret } from '@/link'
+import { readSecret } from '@/crypto'
 
 // Starts the desktop server without its window (Sources/Tests/DropHeadless.cpp, built with the
 // tests) with a downloads directory of its own

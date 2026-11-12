@@ -122,11 +122,11 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from
 
 import { Api } from '@/api'
 import { keepAwake } from '@/awake'
+import { readSecret } from '@/crypto'
 import { readEarlier, withoutPicked } from '@/earlier'
-import { formatSize } from '@/format'
 import { useI18n } from '@/i18n'
-import { readSecret } from '@/link'
 import { Uploader } from '@/uploader'
+import { formatSize } from '@/utils'
 
 const { locale, t } = useI18n()
 const size = (value) => formatSize(value, locale.value)
