@@ -1,4 +1,4 @@
-<h1><img src="Assets/Drop.svg" alt="Drop Logo" width="30"> Drop</h1>
+<h1><img src="Sources/Icons/Drop.svg" alt="Drop Logo" width="30"> Drop</h1>
 
 **Drop** moves photos, videos and any other files from a phone, a tablet or another computer to
 your computer over the local network. No cables, no cloud, no internet access, and nothing to
