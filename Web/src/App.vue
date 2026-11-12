@@ -1,76 +1,57 @@
 <template>
   <q-layout view="hHh lpR fFf">
     <q-page-container>
-      <q-page class="column no-wrap q-pa-md text-accent page">
-        <div class="row items-center no-wrap q-mb-md">
-          <img src="/favicon.svg" alt="" width="40" height="40" />
-          <div class="text-h5 q-ml-sm">Drop</div>
-        </div>
-
+      <q-page class="column no-wrap q-pa-md page">
         <div v-if="!secret" class="col column flex-center text-center text-body1 text-warning">
           {{ t.linkIncomplete }}
         </div>
 
         <template v-else>
-          <q-btn
-            unelevated
-            color="primary"
-            text-color="ink"
-            size="lg"
-            icon="add_photo_alternate"
-            :label="t.chooseFiles"
-            :disable="!!state.stopped"
-            @click="choose"
-          />
           <input ref="input" type="file" multiple hidden @change="picked" />
 
-          <q-banner v-if="state.stopped" rounded class="bg-negative text-white q-mt-md">
+          <q-banner v-if="state.stopped" rounded class="bg-negative text-cream q-mb-md">
             {{ t.outOfSpace }}
           </q-banner>
-          <q-banner v-else-if="statusError" rounded class="bg-negative text-white q-mt-md">
+          <q-banner v-else-if="statusError" rounded class="bg-negative text-cream q-mb-md">
             {{ describeError(statusError) }}.
           </q-banner>
-          <q-banner v-else-if="state.offline" rounded class="bg-warning text-white q-mt-md">
+          <q-banner v-else-if="state.offline" rounded class="bg-warning text-ink q-mb-md">
             <template #avatar><q-spinner size="24px" /></template>
             {{ t.connectionLost }}
           </q-banner>
 
-          <div v-if="state.items.length > 0" class="q-mt-lg">
-            <div class="row items-baseline justify-between text-body2">
+          <template v-if="state.items.length > 0">
+            <div class="row items-baseline justify-between text-body2 text-cream q-mb-sm">
               <div>{{ t.filesSent(state.doneCount, state.items.length) }}</div>
               <div class="text-caption">
                 {{ t.sizeOf(size(state.sentSize), size(state.totalSize)) }}
               </div>
             </div>
-            <q-linear-progress
-              rounded
-              size="8px"
-              color="positive"
-              track-color="grey-8"
-              class="q-mt-xs"
-              :value="state.totalSize > 0 ? state.sentSize / state.totalSize : 1"
-            />
-            <div v-if="state.busy" class="text-caption text-grey-5 q-mt-sm">
+            <div v-if="state.busy" class="text-caption text-cream-muted q-mb-sm">
               {{ t.keepOpen }}
             </div>
-          </div>
-
-          <q-list v-if="state.items.length > 0" dense class="q-mt-md">
-            <file-item
-              v-for="(item, index) in state.items"
-              :key="index"
-              :name="item.name"
-              :caption="item.status === 'failed' ? describeError(item.error) : size(item.size)"
-              :icon="itemMarks[item.status]?.[0]"
-              :icon-color="itemMarks[item.status]?.[1]"
-              :progress="itemProgress(item)"
-            />
-          </q-list>
+            <div class="column no-wrap cards">
+              <file-card
+                v-for="(item, index) in state.items"
+                :key="index"
+                :name="item.name"
+                :caption="item.status === 'failed' ? describeError(item.error) : size(item.size)"
+                :icon="itemMarks[item.status]?.[0]"
+                :icon-color="itemMarks[item.status]?.[1]"
+                :progress="itemProgress(item)"
+                :tone="item.status === 'failed' ? 'error' : 'progress'"
+                :done="item.status === 'done'"
+                :faded="item.status === 'waiting'"
+              />
+            </div>
+          </template>
 
           <template v-if="visibleEarlier.length > 0">
-            <div class="text-body2 q-mt-lg">{{ t.alreadyOnComputer }}</div>
-            <q-list dense class="q-mt-sm">
-              <file-item
+            <div class="text-body2 text-cream q-mb-sm" :class="{ 'q-mt-lg': state.items.length }">
+              {{ t.alreadyOnComputer }}
+            </div>
+            <div class="column no-wrap cards">
+              <file-card
                 v-for="(file, index) in visibleEarlier"
                 :key="index"
                 :name="file.name"
@@ -78,16 +59,40 @@
                   file.complete ? size(file.size) : t.pickAgain(size(file.sent), size(file.size))
                 "
                 :icon="file.complete ? 'check_circle' : 'pause_circle'"
-                :icon-color="file.complete ? 'positive' : 'grey-6'"
+                :icon-color="file.complete ? 'positive' : 'grey-7'"
+                :progress="file.complete || file.size === 0 ? undefined : file.sent / file.size"
+                tone="paused"
               />
-            </q-list>
+            </div>
           </template>
 
           <div
             v-if="state.items.length === 0 && visibleEarlier.length === 0"
-            class="col column flex-center text-center text-grey-5 q-pa-lg"
+            class="col column flex-center text-center text-cream-muted q-pa-lg"
           >
             {{ t.emptyHint }}
+          </div>
+
+          <!-- Fixed at the bottom right of the page column, not of the window -->
+          <div class="fab-rail">
+            <q-btn
+              fab
+              color="primary"
+              padding="8px"
+              :title="t.chooseFiles"
+              :aria-label="t.chooseFiles"
+              :disable="!!state.stopped"
+              @click="choose"
+            >
+              <!-- The drop of the page icon, public/favicon.svg -->
+              <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
+                <path
+                  d="M32.00 10.80L44.80 24.05A17.79 17.79 0 1 1 19.20 24.05ZM44.59 39.77A13.02 13.02 0 0 1 36.45 48.64A2.00 2.00 0 0 1 35.09 44.90A9.03 9.03 0 0 0 40.72 38.74A2.00 2.00 0 0 1 44.59 39.77Z"
+                  fill="#f7e6cc"
+                  fill-rule="evenodd"
+                />
+              </svg>
+            </q-btn>
           </div>
         </template>
       </q-page>
@@ -100,7 +105,7 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from
 
 import { Api, readEarlier } from '@/api'
 import { keepAwake } from '@/awake'
-import FileItem from '@/components/FileItem.vue'
+import FileCard from '@/components/FileCard.vue'
 import { readSecret } from '@/crypto'
 import { useI18n } from '@/i18n'
 import { Uploader } from '@/uploader'
@@ -170,13 +175,14 @@ function picked(event) {
 
 const itemMarks = {
   done: ['check_circle', 'positive'],
-  failed: ['error', 'negative'],
-  waiting: ['schedule', 'grey-6']
+  failed: ['error', 'negative']
 }
 
 function itemProgress(item) {
   if (item.status === 'preparing') return null
-  if (item.status === 'uploading') return item.size > 0 ? item.sent / item.size : 0
+  if (item.status === 'uploading' || item.status === 'failed') {
+    return item.size > 0 ? item.sent / item.size : 0
+  }
   return undefined
 }
 
@@ -200,9 +206,18 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeLeavi
 </script>
 
 <style>
-/* White on the green of the icon is hard to read, its dark ink is not */
+/* Text in the cream and the dark ink of the icon. Lighter text by its color, not by opacity,
+   which would fade the selection too */
+.text-cream {
+  color: #f7e6cc !important;
+}
+
+.text-cream-muted {
+  color: rgba(247, 230, 204, 0.7) !important;
+}
+
 .text-ink {
-  color: #0b1a0f !important;
+  color: #2f2a26 !important;
 }
 </style>
 
@@ -210,5 +225,28 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeLeavi
 .page {
   max-width: 640px;
   margin: 0 auto;
+  /* The last card scrolls out from under the button */
+  padding-bottom: 88px;
+}
+
+.fab-rail {
+  position: fixed;
+  right: 0;
+  bottom: 16px;
+  left: 0;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.fab-rail > * {
+  pointer-events: auto;
+}
+
+.cards {
+  gap: 8px;
 }
 </style>
