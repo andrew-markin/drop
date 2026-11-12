@@ -3,7 +3,8 @@
 
 #include <QComboBox>
 
-// Tells what it is chosen for in the box itself, the list below keeps the bare networks
+// The networks to serve on, never narrower than the longest of them: the window takes its least
+// width from the row this box is in
 class NetworkComboBox : public QComboBox
 {
     Q_OBJECT
@@ -11,15 +12,7 @@ class NetworkComboBox : public QComboBox
 public:
     NetworkComboBox(QWidget* parent = nullptr);
 
-    // Wide enough for the longest network with the prefix, the window is never narrower
-    QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
-
-protected:
-    void paintEvent(QPaintEvent* event) override;
-
-private:
-    QString prefixed(const QString& text) const;
 };
 
 #endif // NETWORKCOMBOBOX_H

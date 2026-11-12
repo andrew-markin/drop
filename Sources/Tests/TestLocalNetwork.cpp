@@ -45,6 +45,9 @@ private slots:
     void isPrivateAddress_data();
     void isPrivateAddress();
 
+    void describeNetwork_data();
+    void describeNetwork();
+
     void looksVirtual_data();
     void looksVirtual();
 
@@ -82,6 +85,30 @@ void TestLocalNetwork::isPrivateAddress()
     QFETCH(bool, expected);
 
     QCOMPARE(LocalNetwork::isPrivateAddress(QHostAddress(address)), expected);
+}
+
+void TestLocalNetwork::describeNetwork_data()
+{
+    QTest::addColumn<QString>("address");
+    QTest::addColumn<int>("prefixLength");
+    QTest::addColumn<QString>("expected");
+
+    QTest::newRow("home") << "192.168.0.101" << 24 << "192.168.0.x";
+    QTest::newRow("larger") << "10.1.2.3" << 16 << "10.1.x.x";
+    QTest::newRow("largest") << "10.1.2.3" << 8 << "10.x.x.x";
+    QTest::newRow("between dots") << "172.16.5.7" << 20 << "172.16.0.0/20";
+    QTest::newRow("small") << "192.168.1.130" << 25 << "192.168.1.128/25";
+    QTest::newRow("single") << "192.168.1.130" << 32 << "192.168.1.130/32";
+    QTest::newRow("unknown") << "192.168.1.130" << -1 << "192.168.1.130";
+}
+
+void TestLocalNetwork::describeNetwork()
+{
+    QFETCH(QString, address);
+    QFETCH(int, prefixLength);
+    QFETCH(QString, expected);
+
+    QCOMPARE(LocalNetwork::describeNetwork(QHostAddress(address), prefixLength), expected);
 }
 
 void TestLocalNetwork::looksVirtual_data()

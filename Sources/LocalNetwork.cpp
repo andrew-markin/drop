@@ -55,6 +55,7 @@ QList<Candidate> getAllCandidates()
             candidate.type = networkInterface.type();
             candidate.flags = networkInterface.flags();
             candidate.address = entry.ip();
+            candidate.prefixLength = entry.prefixLength();
             candidates.append(candidate);
         }
     }
@@ -129,6 +130,31 @@ bool isPrivateAddress(const QHostAddress& address)
     }
 
     return false;
+}
+
+QString describeNetwork(const QHostAddress& address, int prefixLength)
+{
+    if (address.protocol() != QAbstractSocket::IPv4Protocol || prefixLength < 0 || prefixLength > 32)
+    {
+        return address.toString();
+    }
+
+    quint32 ip = address.toIPv4Address();
+
+    if (prefixLength > 0 && prefixLength < 32 && prefixLength % 8 == 0)
+    {
+        QStringList parts = address.toString().split('.');
+
+        for (int i = prefixLength / 8; i < parts.size(); i++)
+        {
+            parts[i] = "x";
+        }
+
+        return parts.join('.');
+    }
+
+    quint32 mask = prefixLength == 0 ? 0 : ~quint32(0) << (32 - prefixLength);
+    return QString("%1/%2").arg(QHostAddress(ip & mask).toString()).arg(prefixLength);
 }
 
 bool looksVirtual(const Candidate& candidate)

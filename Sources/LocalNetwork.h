@@ -16,6 +16,7 @@ struct Candidate
     QNetworkInterface::InterfaceType type = QNetworkInterface::Unknown;
     QNetworkInterface::InterfaceFlags flags;
     QHostAddress address;
+    int prefixLength = -1; // Of the network the address is in
 };
 
 QList<Candidate> getAllCandidates();
@@ -25,6 +26,10 @@ QList<Candidate> rankCandidates(const QList<Candidate>& candidates, const QHostA
 QList<Candidate> getCandidates();
 
 bool isPrivateAddress(const QHostAddress& address);
+
+// The network the way people compare it with the address of a phone: 192.168.0.x for the usual
+// home network, 10.1.x.x for a larger one, 172.16.0.0/20 when the mask does not end on a dot
+QString describeNetwork(const QHostAddress& address, int prefixLength);
 bool looksVirtual(const Candidate& candidate);
 
 QString makeLink(const QHostAddress& address, quint16 port, const QByteArray& secret);

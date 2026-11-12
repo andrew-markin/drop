@@ -81,9 +81,13 @@ QIcon makeApplicationIcon(const QString& path)
     return icon;
 }
 
+// The network, not the address of this computer: that is what a phone has to be on. The list reads
+// as a list of networks, the closed box tells what it is for.
 QString describeCandidate(const LocalNetwork::Candidate& candidate)
 {
-    return QString("%1 (%2)").arg(candidate.address.toString(), candidate.humanReadableName);
+    return Drop::tr("Network: %1")
+        .arg(QString("%1 (%2)").arg(LocalNetwork::describeNetwork(candidate.address, candidate.prefixLength),
+                                    candidate.humanReadableName));
 }
 
 } // namespace
@@ -219,21 +223,24 @@ void Drop::refreshCandidates()
 {
     QList<LocalNetwork::Candidate> candidates = LocalNetwork::getCandidates();
 
-    QStringList descriptions;
+    // The addresses too: a new address in the same network looks the same in the list
+    QStringList descriptions, addresses;
 
     for (const LocalNetwork::Candidate& candidate : candidates)
     {
         descriptions.append(describeCandidate(candidate));
+        addresses.append(candidate.address.toString());
     }
 
-    QStringList currentDescriptions;
+    QStringList currentDescriptions, currentAddresses;
 
     for (int i = 0; i < m_networkComboBox->count(); i++)
     {
         currentDescriptions.append(m_networkComboBox->itemText(i));
+        currentAddresses.append(m_networkComboBox->itemData(i).toString());
     }
 
-    if (descriptions == currentDescriptions)
+    if (descriptions == currentDescriptions && addresses == currentAddresses)
     {
         return;
     }
@@ -253,7 +260,13 @@ void Drop::refreshCandidates()
     m_candidates = candidates;
 
     m_networkComboBox->clear();
-    m_networkComboBox->addItems(descriptions);
+
+    for (int i = 0; i < candidates.size(); i++)
+    {
+        m_networkComboBox->addItem(descriptions.at(i), addresses.at(i));
+        m_networkComboBox->setItemData(i, tr("The address of this computer: %1").arg(addresses.at(i)), Qt::ToolTipRole);
+    }
+
     m_networkComboBox->setCurrentIndex(currentIndex);
 
     if (candidates.value(currentIndex).address != currentAddress || currentAddress.isNull())
@@ -434,6 +447,7 @@ void Drop::updateStatus()
 {
     // Shown even with one network, it tells which one devices have to join
     m_networkComboBox->setEnabled(!m_candidates.isEmpty());
+    m_networkComboBox->setToolTip(m_networkComboBox->currentData(Qt::ToolTipRole).toString());
     m_copyButton->setEnabled(!m_link.isEmpty());
     m_qrCodeButton->setEnabled(!m_link.isEmpty());
 
