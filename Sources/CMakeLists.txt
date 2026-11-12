@@ -84,6 +84,8 @@ add_executable(
     Drop WIN32
     AlertWidget.cpp
     AlertWidget.h
+    CinnamonTheme.cpp
+    CinnamonTheme.h
     Colors.cpp
     Colors.h
     Crypto.cpp

@@ -21,6 +21,13 @@ add_drop_test(
 )
 
 add_drop_test(
+    TestCinnamonTheme
+    ${PROJECT_SOURCE_DIR}/CinnamonTheme.cpp
+    ${PROJECT_SOURCE_DIR}/CinnamonTheme.h
+)
+target_link_libraries(TestCinnamonTheme PRIVATE Qt6::Gui)
+
+add_drop_test(
     TestStorage
     ${PROJECT_SOURCE_DIR}/Storage.cpp
     ${PROJECT_SOURCE_DIR}/Storage.h

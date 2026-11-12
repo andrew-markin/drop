@@ -1,9 +1,16 @@
 #include "TrayIcon.h"
 
 #include <QCoreApplication>
+#include <QFile>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QStyleHints>
+
+#if defined(Q_OS_LINUX)
+#include <QDBusConnection>
+
+#include "CinnamonTheme.h"
+#endif
 
 #if defined(Q_OS_WIN)
 #include <QSettings>
@@ -32,6 +39,46 @@ static const wchar_t* const ColorSetChange = L"ImmersiveColorSet";
 
 #endif
 
+#if defined(Q_OS_LINUX)
+
+// dconf tells every change of settings, see the dconf-service manual
+static const char* const DconfPath = "/ca/desrt/dconf/Writer/user";
+static const char* const DconfInterface = "ca.desrt.dconf.Writer";
+static const char* const DconfNotify = "Notify";
+
+// Where Cinnamon keeps the name of its theme
+static const QString CinnamonThemeSettings = "/org/cinnamon/theme/";
+
+// Below it a light panel by the luminance of its color, as the eye sees it
+static const qreal LightPanelLuminance = 0.5;
+
+bool isLightColor(const QColor& color)
+{
+    return 0.299 * color.redF() + 0.587 * color.greenF() + 0.114 * color.blueF() >= LightPanelLuminance;
+}
+
+// Invalid when the theme or its style sheet is not found
+QColor cinnamonPanelColor()
+{
+    QString name = CinnamonTheme::currentName();
+
+    if (name.isNull())
+    {
+        return QColor();
+    }
+
+    QFile file(CinnamonTheme::styleSheetPath(name));
+
+    if (!file.open(QIODevice::ReadOnly))
+    {
+        return QColor();
+    }
+
+    return CinnamonTheme::panelColor(QString::fromUtf8(file.readAll()));
+}
+
+#endif
+
 bool isPanelDark()
 {
 #if defined(Q_OS_WIN)
@@ -40,6 +87,16 @@ bool isPanelDark()
     return settings.value(SystemUsesLightThemeValue, 0).toInt() == 0;
 #else
 #if defined(Q_OS_LINUX)
+    if (CinnamonTheme::isCurrentDesktop())
+    {
+        QColor color = cinnamonPanelColor();
+
+        if (color.isValid())
+        {
+            return !isLightColor(color);
+        }
+    }
+
     // The top bar of GNOME stays dark in the light theme too
     const QStringList desktops = qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(':');
 
@@ -63,7 +120,13 @@ TrayIcon::TrayIcon(QObject* parent) : QSystemTrayIcon(parent)
 
     connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, &TrayIcon::updateIcon);
 
-#if defined(Q_OS_WIN)
+#if defined(Q_OS_LINUX)
+    if (CinnamonTheme::isCurrentDesktop())
+    {
+        QDBusConnection::sessionBus().connect(QString(), DconfPath, DconfInterface, DconfNotify, this,
+                                              SLOT(settingsChanged(QString)));
+    }
+#elif defined(Q_OS_WIN)
     QCoreApplication::instance()->installNativeEventFilter(this);
 #endif
 }
@@ -96,6 +159,19 @@ bool TrayIcon::nativeEventFilter(const QByteArray& eventType, void* message, qin
 #endif
 
     return false;
+}
+
+void TrayIcon::settingsChanged(const QString& prefix)
+{
+#if defined(Q_OS_LINUX)
+    // A key, or a directory of the keys that changed, which can be above the theme one
+    if (prefix.startsWith(CinnamonThemeSettings) || CinnamonThemeSettings.startsWith(prefix))
+    {
+        updateIcon();
+    }
+#else
+    Q_UNUSED(prefix);
+#endif
 }
 
 // The SVG itself: the tray picks its size from the few Qt offers for it, as for other applications,
