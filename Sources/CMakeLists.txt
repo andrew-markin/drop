@@ -133,7 +133,7 @@ include(EmbedWeb)
 embed_web(Drop)
 
 if(WIN32)
-    set(PROJECT_ICON "Drop.ico")
+    set(PROJECT_ICON "Icons/Drop.ico")
 
     # Configure executable resources
 
@@ -148,7 +148,7 @@ if(WIN32)
         ${CMAKE_CURRENT_BINARY_DIR}/Drop.rc
     )
 elseif(LINUX)
-    set(PROJECT_ICON "Drop.svg")
+    set(PROJECT_ICON "Icons/Drop.svg")
 
     # The same sizes as IconSizes in Drop.cpp
     set(PROJECT_ICON_SIZES 16 22 24 32 48 64 128 256)

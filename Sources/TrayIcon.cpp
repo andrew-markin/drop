@@ -21,11 +21,11 @@
 
 namespace {
 
-static const char* const DarkIconPath = ":/DropTrayDark.svg";
+static const char* const DarkIconPath = ":/Icons/DropTrayDark.svg";
 
 #if !defined(Q_OS_MACOS)
 
-static const char* const LightIconPath = ":/DropTrayLight.svg";
+static const char* const LightIconPath = ":/Icons/DropTrayLight.svg";
 
 #if defined(Q_OS_WIN)
 

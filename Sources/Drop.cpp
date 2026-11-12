@@ -495,7 +495,7 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationVersion(PROJECT_VERSION);
 
     QApplication application(argc, argv);
-    QApplication::setWindowIcon(makeApplicationIcon(":/Drop.svg"));
+    QApplication::setWindowIcon(makeApplicationIcon(":/Icons/Drop.svg"));
 
     Translator translator(QLocale::system());
     QApplication::installTranslator(&translator);

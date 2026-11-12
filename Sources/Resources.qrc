@@ -1,7 +1,7 @@
 <RCC>
     <qresource prefix="/">
-        <file>Drop.svg</file>
-        <file>DropTrayDark.svg</file>
-        <file>DropTrayLight.svg</file>
+        <file>Icons/Drop.svg</file>
+        <file>Icons/DropTrayDark.svg</file>
+        <file>Icons/DropTrayLight.svg</file>
     </qresource>
 </RCC>
