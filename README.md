@@ -1,4 +1,7 @@
-<h1><img src="Sources/Icons/Drop.svg" alt="Drop Logo" width="30"> Drop</h1>
+# Drop
+
+[![Build](https://github.com/andrew-markin/drop/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/andrew-markin/drop/actions/workflows/build.yml)
+[![License: GPL v3](https://img.shields.io/github/license/andrew-markin/drop)](LICENSE)
 
 **Drop** moves photos, videos and any other files from a phone, a tablet or another computer to
 your computer over the local network. No cables, no cloud, no internet access, and nothing to
