@@ -24,6 +24,7 @@
 #include "QrCodeDialog.h"
 #include "SingleInstance.h"
 #include "Translator.h"
+#include "TrayIcon.h"
 #include "Uploads.h"
 #include "UploadsEstimate.h"
 #include "UploadsModel.h"
@@ -140,9 +141,7 @@ Drop::Drop(QWidget* parent)
     connect(m_uploads, &Uploads::dropDirectoryCreated, m_openButton, [this]() { m_openButton->setEnabled(true); });
 
     // Only to tell when a drop is over: the application quits with its window
-    // The SVG itself: the tray picks its size from the few Qt offers for it, as for other
-    // applications, while a full set of sizes made it pick a small one and look smaller than them
-    m_trayIcon = new QSystemTrayIcon(QIcon(":/Drop.svg"), this);
+    m_trayIcon = new TrayIcon(this);
     m_trayIcon->setToolTip(PROJECT_TITLE);
     m_trayIcon->show();
 

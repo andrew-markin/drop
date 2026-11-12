@@ -100,6 +100,8 @@ add_executable(
     QrCodeDialog.h
     QrCodeWidget.cpp
     QrCodeWidget.h
+    TrayIcon.cpp
+    TrayIcon.h
     SingleInstance.cpp
     SingleInstance.h
     Resources.qrc
