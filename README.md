@@ -16,20 +16,42 @@ install on the phone: scan a QR code and pick the files.
   network, see [Security](#security).
 - **Tidy results:** every drop goes to a folder of its own in Downloads, `Drop-YYYY-MM-DD-N`,
   files keep their names and modification times.
-- **Progress on both sides:** the page and the window of the application show what is sent.
+- **Progress on both sides:** the page and the window of the application show every file as it
+  goes, the window also shows the time left in its title and tells with a notification when the
+  drop is complete.
 
 ## How to Use
 
-1. Start **Drop** on the computer. It shows the network it listens on.
-2. Press **Show QR** and scan the QR code with a phone connected to the same Wi-Fi or wired
-   network. To send the link to a device without a camera, press **Copy Link** and send it in a
-   messenger.
-3. On the page that opens, press **Choose Files** and pick photos, videos or other files.
+1. Start **Drop** on the computer. The list at the top of the window shows the network devices
+   have to join. If the computer is on several networks, for example on Wi-Fi and on a wired one,
+   choose the one the phone is on.
+2. Press **Show QR** and scan the QR code with the phone. To send the link to a device without a
+   camera, press **Copy Link** and send it in a messenger.
+3. On the page that opens, tap the round button with a drop at the bottom right and pick photos,
+   videos or other files. Pick more files the same way at any time.
 4. Keep the page open until the files are sent. They appear in a `Drop-YYYY-MM-DD-N` folder in
-   the Downloads folder of the computer; **Open Folder** shows it.
+   the Downloads folder of the computer; **Open Folder** shows it, and a double click opens a
+   file from the list in the window.
+
+When the files stop coming, Drop shows a notification; clicking it opens the folder. Drop quits
+when its window is closed, and starting it again while it runs brings up the window it already
+has.
 
 Every start of Drop is a new drop: a new folder, a new address and a new secret, so links from
 earlier starts stop working.
+
+### If Something Goes Wrong
+
+- **The page says the connection is lost:** the device is on another network or out of range.
+  The page keeps trying and continues on its own once the device is back on the network of the
+  computer.
+- **The page was closed or reloaded in the middle:** open the same link again. The files the
+  computer already has are listed under **Already on the computer**; pick the unfinished ones
+  again and they continue from where they stopped.
+- **The disk of the computer is full:** both the window and the page say so and sending stops.
+  Free some space, reload the page and pick the files again.
+- **The page says the link is wrong or Drop was restarted:** the link is from an earlier start of
+  Drop, scan the QR code in the window again.
 
 ### iPhone and iPad
 
