@@ -56,52 +56,30 @@
           </div>
 
           <q-list v-if="state.items.length > 0" dense class="q-mt-md">
-            <q-item v-for="(item, index) in state.items" :key="index" class="q-px-none">
-              <q-item-section>
-                <q-item-label lines="1">{{ item.name }}</q-item-label>
-                <q-item-label caption>
-                  <template v-if="item.status === 'failed'">{{
-                    describeError(item.error)
-                  }}</template>
-                  <template v-else>{{ size(item.size) }}</template>
-                </q-item-label>
-                <q-linear-progress
-                  v-if="item.status === 'uploading' || item.status === 'preparing'"
-                  rounded
-                  size="4px"
-                  color="primary"
-                  track-color="grey-8"
-                  class="q-mt-xs"
-                  :indeterminate="item.status === 'preparing'"
-                  :value="item.size > 0 ? item.sent / item.size : 0"
-                />
-              </q-item-section>
-              <q-item-section side>
-                <q-icon v-if="item.status === 'done'" name="check_circle" color="positive" />
-                <q-icon v-else-if="item.status === 'failed'" name="error" color="negative" />
-                <q-icon v-else-if="item.status === 'waiting'" name="schedule" color="grey-6" />
-              </q-item-section>
-            </q-item>
+            <file-item
+              v-for="(item, index) in state.items"
+              :key="index"
+              :name="item.name"
+              :caption="item.status === 'failed' ? describeError(item.error) : size(item.size)"
+              :icon="itemMarks[item.status]?.[0]"
+              :icon-color="itemMarks[item.status]?.[1]"
+              :progress="itemProgress(item)"
+            />
           </q-list>
 
           <template v-if="visibleEarlier.length > 0">
             <div class="text-body2 q-mt-lg">{{ t.alreadyOnComputer }}</div>
             <q-list dense class="q-mt-sm">
-              <q-item v-for="(file, index) in visibleEarlier" :key="index" class="q-px-none">
-                <q-item-section>
-                  <q-item-label lines="1">{{ file.name }}</q-item-label>
-                  <q-item-label caption>
-                    <template v-if="file.complete">{{ size(file.size) }}</template>
-                    <template v-else>
-                      {{ t.pickAgain(size(file.sent), size(file.size)) }}
-                    </template>
-                  </q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                  <q-icon v-if="file.complete" name="check_circle" color="positive" />
-                  <q-icon v-else name="pause_circle" color="grey-6" />
-                </q-item-section>
-              </q-item>
+              <file-item
+                v-for="(file, index) in visibleEarlier"
+                :key="index"
+                :name="file.name"
+                :caption="
+                  file.complete ? size(file.size) : t.pickAgain(size(file.sent), size(file.size))
+                "
+                :icon="file.complete ? 'check_circle' : 'pause_circle'"
+                :icon-color="file.complete ? 'positive' : 'grey-6'"
+              />
             </q-list>
           </template>
 
@@ -122,6 +100,7 @@ import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from
 
 import { Api, readEarlier } from '@/api'
 import { keepAwake } from '@/awake'
+import FileItem from '@/components/FileItem.vue'
 import { readSecret } from '@/crypto'
 import { useI18n } from '@/i18n'
 import { Uploader } from '@/uploader'
@@ -187,6 +166,18 @@ function picked(event) {
   event.target.value = '' // The same files can be picked again
   if (files.length > 0) uploader.add(files)
   else if (!uploader.busy) keepAwake(false)
+}
+
+const itemMarks = {
+  done: ['check_circle', 'positive'],
+  failed: ['error', 'negative'],
+  waiting: ['schedule', 'grey-6']
+}
+
+function itemProgress(item) {
+  if (item.status === 'preparing') return null
+  if (item.status === 'uploading') return item.size > 0 ? item.sent / item.size : 0
+  return undefined
 }
 
 function describeError(error) {
