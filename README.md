@@ -20,7 +20,8 @@ install on the phone: scan a QR code and pick the files.
 - **Nothing to install on devices:** the computer serves a small web page, any modern browser
   sends files from it.
 - **Any files of any size:** files go in chunks, so even long videos make it, and the page keeps
-  the phone screen on while they are sent.
+  the phone screen on while they are sent, except on iPhone and iPad, see
+  [iPhone and iPad](#iphone-and-ipad).
 - **Survives a flaky network:** lost connections are retried, and a reloaded page continues
   where it stopped once the same files are picked again.
 - **Encrypted end to end:** the link carries a one-time secret that never travels over the
@@ -78,6 +79,10 @@ can make this faster; the picker just has to be left alone until it closes.
 The upside is that the files open on any computer, Windows without HEIC and HEVC support
 included. To get the originals instead, look for **Options** at the top of the photo picker,
 where some iOS versions let you choose the format.
+
+While the files go, iOS locks the screen on its own time as usual: over the local network Safari
+gives the page no way to keep it on. Sending goes on in the background for a while and then
+pauses; unlock the phone and it continues by itself.
 
 ## Security
 
