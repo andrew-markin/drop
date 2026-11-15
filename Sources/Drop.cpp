@@ -99,6 +99,11 @@ Drop::Drop(QWidget* parent)
 {
     setWindowTitle(PROJECT_TITLE);
 
+    // No maximize button: stretched over the whole screen the window is a few buttons and rows in
+    // much empty space
+    setWindowFlags(Qt::Window | Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint |
+                   Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
+
     m_uploads = new Uploads(QDir(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation)),
                             Uploads::DefaultChunkSize, this);
 
@@ -191,6 +196,9 @@ Drop::Drop(QWidget* parent)
     {
         placeFirstTime();
     }
+
+    // Saved maximized by an earlier version, there would be no button to get out of it
+    setWindowState(windowState() & ~Qt::WindowMaximized);
 }
 
 // A little wider than the least the row of buttons needs, about square, in the middle of the screen
