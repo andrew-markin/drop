@@ -61,35 +61,68 @@ set(CPACK_MONOLITHIC_INSTALL ON)
 
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "${PROJECT_NAME}")
 
+# Uninstall key and name in the list of installed apps are the same for all versions,
+# so a new version replaces the previous one instead of being registered next to it
+set(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${PROJECT_TITLE}")
+
 set(CPACK_NSIS_MUI_LANGUAGE "English")
 set(CPACK_NSIS_IGNORE_LICENSE_PAGE ON)
-set(CPACK_NSIS_DISPLAY_NAME "${PROJECT_TITLE} ${PROJECT_VERSION}")
+set(CPACK_NSIS_DISPLAY_NAME "${PROJECT_TITLE}")
 set(CPACK_NSIS_PACKAGE_NAME "${PROJECT_TITLE}")
 set(CPACK_NSIS_MUI_ICON "${PROJECT_SOURCE_DIR}/${PROJECT_ICON}")
 set(CPACK_NSIS_MUI_UNIICON "${PROJECT_SOURCE_DIR}/${PROJECT_ICON}")
 set(CPACK_NSIS_INSTALLED_ICON_NAME "${PROJECT_EXECUTABLE}")
-set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_MANIFEST_DPI_AWARE TRUE)
 set(CPACK_NSIS_COMPRESSOR "/SOLID lzma")
+
+# The installed version is removed silently before installing files, so the uninstall-before-install
+# question of CPack is not needed
+
+configure_file(
+    ${CMAKE_CURRENT_LIST_DIR}/Windows/RemovePreviousInstalls.nsh.in
+    ${CMAKE_CURRENT_BINARY_DIR}/RemovePreviousInstalls.nsh
+    @ONLY
+)
+
+# NSIS doesn't treat "D:/..." as an absolute path, so a native one with escaped backslashes is used
+file(TO_NATIVE_PATH "${CMAKE_CURRENT_BINARY_DIR}/RemovePreviousInstalls.nsh" REMOVE_PREVIOUS_INSTALLS_NSH)
+string(REPLACE "\\" "\\\\" REMOVE_PREVIOUS_INSTALLS_NSH "${REMOVE_PREVIOUS_INSTALLS_NSH}")
 
 set(
     CPACK_NSIS_DEFINES "
     !define MUI_FINISHPAGE_RUN \\\"explorer.exe\\\"
-    !define MUI_FINISHPAGE_RUN_PARAMETERS \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_TITLE}.lnk\\\""
+    !define MUI_FINISHPAGE_RUN_PARAMETERS \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_TITLE}.lnk\\\"
+    !include \\\"${REMOVE_PREVIOUS_INSTALLS_NSH}\\\""
+)
+
+set(
+    CPACK_NSIS_EXTRA_PREINSTALL_COMMANDS "
+    Call RemovePreviousInstalls"
+)
+
+# Start menu shortcut is created and removed by CPack hooks, where the start menu folder is known
+# (in the uninstaller it's $MUI_TEMP, $STARTMENU_FOLDER is set by the installer page only)
+
+set(
+    CPACK_NSIS_CREATE_ICONS_EXTRA "
+    CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_TITLE}.lnk\\\" \\\"$INSTDIR\\\\${PROJECT_EXECUTABLE}\\\""
+)
+
+set(
+    CPACK_NSIS_DELETE_ICONS_EXTRA "
+    Delete \\\"$SMPROGRAMS\\\\$MUI_TEMP\\\\${PROJECT_TITLE}.lnk\\\""
 )
 
 # Devices of the local network connect to the application, so Windows Firewall lets it accept
 # connections on private networks only, instead of asking on the first start
 set(
     CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-    CreateShortCut \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_TITLE}.lnk\\\" \\\"$INSTDIR\\\\${PROJECT_EXECUTABLE}\\\"
     nsExec::Exec 'netsh advfirewall firewall delete rule name=\\\"${PROJECT_TITLE}\\\"'
     nsExec::Exec 'netsh advfirewall firewall add rule name=\\\"${PROJECT_TITLE}\\\" dir=in action=allow program=\\\"$INSTDIR\\\\${PROJECT_EXECUTABLE}\\\" profile=private'"
 )
 
 set(
     CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
-    Delete \\\"$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\${PROJECT_TITLE}.lnk\\\"
     nsExec::Exec 'netsh advfirewall firewall delete rule name=\\\"${PROJECT_TITLE}\\\"'"
 )
 

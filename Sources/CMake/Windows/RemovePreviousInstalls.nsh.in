@@ -1,0 +1,47 @@
+; Removes the installed version of @PROJECT_TITLE@ before new files are copied, so updates replace it silently.
+; It is removed by its own uninstaller, so nothing is orphaned.
+
+!include "FileFunc.nsh"
+
+!define PREVIOUS_UNINSTALL_ROOT "Software\Microsoft\Windows\CurrentVersion\Uninstall"
+!define PREVIOUS_KEY "@PROJECT_TITLE@"
+!define PREVIOUS_PUBLISHER "@PROJECT_DEVELOPER_TITLE@"
+
+Function RemovePreviousInstalls
+    Push $0 ; Temporary value
+    Push $1 ; Uninstaller path
+    Push $2 ; Installation directory
+
+    ReadRegStr $0 HKLM "${PREVIOUS_UNINSTALL_ROOT}\${PREVIOUS_KEY}" "Publisher"
+    StrCmp $0 "${PREVIOUS_PUBLISHER}" 0 done
+
+    ; Uninstall string is the quoted path to the uninstaller
+    ReadRegStr $1 HKLM "${PREVIOUS_UNINSTALL_ROOT}\${PREVIOUS_KEY}" "UninstallString"
+    StrCpy $0 $1 1
+    StrCmp $0 '"' 0 +2
+        StrCpy $1 $1 -1 1
+
+    IfFileExists "$1" 0 cleanup
+        ${GetParent} "$1" $2
+        DetailPrint "Removing previous installation"
+
+        ; "_?=" makes the uninstaller run in place, so ExecWait waits until it finishes
+        ExecWait '"$1" /S _?=$2'
+
+        ; Running in place, the uninstaller can't delete itself
+        Delete "$1"
+        RMDir "$2"
+
+    cleanup:
+        DeleteRegKey HKLM "${PREVIOUS_UNINSTALL_ROOT}\${PREVIOUS_KEY}"
+        DeleteRegKey HKLM "Software\${PREVIOUS_PUBLISHER}\${PREVIOUS_KEY}"
+        DeleteRegKey /ifempty HKLM "Software\${PREVIOUS_PUBLISHER}"
+
+    done:
+        ; The uninstaller may have removed the installation directory
+        SetOutPath "$INSTDIR"
+
+    Pop $2
+    Pop $1
+    Pop $0
+FunctionEnd
