@@ -8,6 +8,7 @@
 #include <QIcon>
 #include <QPushButton>
 #include <QScreen>
+#include <QSet>
 #include <QSettings>
 #include <QMessageBox>
 #include <QStandardPaths>
@@ -30,6 +31,17 @@
 #include "UploadsModel.h"
 #include "UploadsView.h"
 #include "WebServer.h"
+
+#if defined(Q_OS_WINDOWS)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <wtsapi32.h>
+#endif
 
 namespace {
 
@@ -89,6 +101,45 @@ QString describeCandidate(const LocalNetwork::Candidate& candidate)
     return Drop::tr("Network: %1")
         .arg(QString("%1 (%2)").arg(LocalNetwork::describeNetwork(candidate.address, candidate.prefixLength),
                                     candidate.humanReadableName));
+}
+
+// Users with a session: the uninstaller may run as another user, an administrator, so it asks the
+// instances of all of them to quit
+QStringList loggedInUserNames()
+{
+#if defined(Q_OS_WINDOWS)
+    PWTS_SESSION_INFO sessions = nullptr;
+    DWORD sessionCount = 0;
+
+    if (!WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, &sessions, &sessionCount))
+    {
+        return QStringList();
+    }
+
+    QSet<QString> userNames;
+
+    for (DWORD index = 0; index < sessionCount; index++)
+    {
+        LPWSTR userName = nullptr;
+        DWORD userNameSize = 0;
+
+        if (WTSQuerySessionInformation(WTS_CURRENT_SERVER_HANDLE, sessions[index].SessionId, WTSUserName,
+                                       &userName, &userNameSize))
+        {
+            if (userName && userName[0])
+            {
+                userNames.insert(QString::fromWCharArray(userName));
+            }
+
+            WTSFreeMemory(userName);
+        }
+    }
+
+    WTSFreeMemory(sessions);
+    return userNames.values();
+#else
+    return QStringList();
+#endif
 }
 
 } // namespace
@@ -502,6 +553,22 @@ int main(int argc, char* argv[])
     QCoreApplication::setApplicationName(PROJECT_NAME);
     QCoreApplication::setApplicationVersion(PROJECT_VERSION);
 
+    // The uninstaller closes the running application, so its files can be removed
+    for (int index = 1; index < argc; index++)
+    {
+        if (qstrcmp(argv[index], "--shutdown") == 0)
+        {
+            SingleInstance::requestQuit(SingleInstance::defaultName());
+
+            for (const QString& userName : loggedInUserNames())
+            {
+                SingleInstance::requestQuit(SingleInstance::nameForUser(userName));
+            }
+
+            return EXIT_SUCCESS;
+        }
+    }
+
     QApplication application(argc, argv);
     QApplication::setWindowIcon(makeApplicationIcon(":/Icons/Drop.svg"));
 
@@ -526,6 +593,10 @@ int main(int argc, char* argv[])
     drop.show();
 
     QObject::connect(&singleInstance, &SingleInstance::activationRequested, &drop, &Drop::showWindow);
+    QObject::connect(&singleInstance, &SingleInstance::quitRequested, &application, [&drop]() {
+        drop.close(); // Saves the window geometry
+        QCoreApplication::quit();
+    });
 
     return application.exec();
 }

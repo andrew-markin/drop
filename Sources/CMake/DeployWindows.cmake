@@ -123,6 +123,8 @@ set(
 
 set(
     CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+    ExecWait '\\\"$INSTDIR\\\\${PROJECT_EXECUTABLE}\\\" --shutdown'
+    Sleep 2000
     nsExec::Exec 'netsh advfirewall firewall delete rule name=\\\"${PROJECT_TITLE}\\\"'"
 )
 

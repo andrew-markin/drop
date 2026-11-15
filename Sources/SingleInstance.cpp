@@ -19,6 +19,7 @@
 namespace {
 
 static const char* const ActivateMessage = "activate";
+static const char* const QuitMessage = "quit";
 static const int MessageSizeMax = 64;
 
 static const int ConnectTimeout = 1000; // 1s
@@ -37,22 +38,7 @@ bool SingleInstance::start()
 {
     if (!m_lockFile.tryLock(0))
     {
-        QLocalSocket socket;
-        socket.connectToServer(m_name);
-
-        if (socket.waitForConnected(ConnectTimeout))
-        {
-#if defined(Q_OS_WINDOWS)
-            // Windows keeps a process in the background from taking the foreground. This one was just
-            // started by the user, so it may pass that right on to the running one.
-            AllowSetForegroundWindow(ASFW_ANY);
-#endif
-
-            socket.write(ActivateMessage);
-            socket.waitForBytesWritten(WriteTimeout);
-            socket.disconnectFromServer();
-        }
-
+        sendMessage(m_name, ActivateMessage);
         return false;
     }
 
@@ -78,10 +64,45 @@ bool SingleInstance::start()
     return true;
 }
 
+bool SingleInstance::requestQuit(const QString& name)
+{
+    return sendMessage(name, QuitMessage);
+}
+
+bool SingleInstance::sendMessage(const QString& name, const QByteArray& message)
+{
+    QLocalSocket socket;
+    socket.connectToServer(name);
+
+    if (!socket.waitForConnected(ConnectTimeout))
+    {
+        return false;
+    }
+
+#if defined(Q_OS_WINDOWS)
+    if (message == ActivateMessage)
+    {
+        // Windows keeps a process in the background from taking the foreground. This one was just
+        // started by the user, so it may pass that right on to the running one.
+        AllowSetForegroundWindow(ASFW_ANY);
+    }
+#endif
+
+    socket.write(message);
+    socket.waitForBytesWritten(WriteTimeout);
+    socket.disconnectFromServer();
+
+    return true;
+}
+
+QString SingleInstance::nameForUser(const QString& userName)
+{
+    return QString("%1-%2").arg(PROJECT_NAME, userName);
+}
+
 QString SingleInstance::defaultName()
 {
-    QString userName = qEnvironmentVariable("USER", qEnvironmentVariable("USERNAME"));
-    return QString("%1-%2").arg(PROJECT_NAME, userName);
+    return nameForUser(qEnvironmentVariable("USER", qEnvironmentVariable("USERNAME")));
 }
 
 QString SingleInstance::defaultLockDirectory()
@@ -115,6 +136,10 @@ void SingleInstance::acceptConnections()
             if (message == ActivateMessage)
             {
                 emit activationRequested();
+            }
+            else if (message == QuitMessage)
+            {
+                emit quitRequested();
             }
         });
     }

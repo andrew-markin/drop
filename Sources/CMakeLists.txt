@@ -200,6 +200,10 @@ if (WIN32)
         Drop PROPERTIES
         MSVC_WCHAR_T_AS_BUILTIN_TYPE ON
     )
+    target_link_libraries(
+        Drop PRIVATE
+        wtsapi32
+    )
 elseif(LINUX)
     target_link_libraries(
         Drop PRIVATE

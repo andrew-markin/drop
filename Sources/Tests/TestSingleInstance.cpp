@@ -18,6 +18,7 @@ private slots:
     void cleanup();
 
     void secondInstanceActivatesFirst();
+    void quitRequestReachesFirst();
     void startsAgainAfterFirstQuits();
     void namesAreSeparate();
 
@@ -78,6 +79,22 @@ void TestSingleInstance::secondInstanceActivatesFirst()
     }));
 
     QTRY_COMPARE(activationSpy.count(), 1);
+}
+
+void TestSingleInstance::quitRequestReachesFirst()
+{
+    SingleInstance first(name(), m_temporaryDir->path());
+    QSignalSpy activationSpy(&first, &SingleInstance::activationRequested);
+    QSignalSpy quitSpy(&first, &SingleInstance::quitRequested);
+    QVERIFY(first.start());
+
+    QVERIFY(runInThread([this]() { return SingleInstance::requestQuit(name()); }));
+
+    QTRY_COMPARE(quitSpy.count(), 1);
+    QCOMPARE(activationSpy.count(), 0);
+
+    // Nobody to ask under another name
+    QVERIFY(!SingleInstance::requestQuit(name("other")));
 }
 
 void TestSingleInstance::startsAgainAfterFirstQuits()
