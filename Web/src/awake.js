@@ -20,8 +20,8 @@ export function keepAwakeOnTap() {
 }
 
 function apply() {
-  noSleep ??= new NoSleep()
-  if (wanted && !noSleep.isEnabled) {
+  noSleep ??= create()
+  if (wanted && !playing()) {
     noSleep
       .enable()
       // Sending may be over by the time it starts
@@ -30,4 +30,20 @@ function apply() {
   } else if (!wanted && noSleep.isEnabled) {
     noSleep.disable()
   }
+}
+
+// Android pauses the video when another app takes the sound, a notification for one, or when the
+// page is hidden, and the video does not go on by itself. Started again at once, or on a return to
+// the page or any tap there if that fails.
+function create() {
+  const created = new NoSleep()
+  const resume = () => wanted && document.visibilityState === 'visible' && apply()
+  created.noSleepVideo?.addEventListener('pause', resume)
+  document.addEventListener('visibilitychange', resume)
+  document.addEventListener('click', resume, true)
+  return created
+}
+
+function playing() {
+  return noSleep.isEnabled && !noSleep.noSleepVideo?.paused
 }
