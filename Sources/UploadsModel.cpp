@@ -1,5 +1,6 @@
 #include "UploadsModel.h"
 
+#include <QFileInfo>
 #include <QLocale>
 #include <QTimer>
 
@@ -92,7 +93,8 @@ QVariant UploadsModel::data(const QModelIndex& index, int role) const
         switch (index.column())
         {
         case NameColumn:
-            return upload.name;
+            // The one on the disk once it is there, with " (2)" if the name was taken
+            return upload.complete ? QFileInfo(upload.path).fileName() : upload.name;
         case SizeColumn:
             return formatSize(upload.size);
         case StatusColumn:

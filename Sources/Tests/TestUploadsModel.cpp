@@ -29,6 +29,7 @@ private slots:
     void startsWithExistingUploads();
     void addsRows();
     void followsProgress();
+    void showsSavedName();
     void afterglow();
     void writeError();
     void headers();
@@ -125,6 +126,22 @@ void TestUploadsModel::followsProgress()
 
     // Once there, the tooltip tells where the file is
     QCOMPARE(model.indexOf(id).data(Qt::ToolTipRole).toString(), m_uploads->upload(id).path);
+}
+
+void TestUploadsModel::showsSavedName()
+{
+    QByteArray first = announce("a.txt", 4);
+    QByteArray second = announce("a.txt", 2);
+
+    UploadsModel model(m_uploads);
+    QModelIndex name = model.indexOf(second);
+
+    QCOMPARE(m_uploads->writeChunk(first, 0, "0123"), Uploads::Error::None);
+    QCOMPARE(name.data().toString(), "a.txt"); // As sent while it comes
+
+    QCOMPARE(m_uploads->writeChunk(second, 0, "01"), Uploads::Error::None);
+    QCOMPARE(model.indexOf(first).data().toString(), "a.txt");
+    QCOMPARE(name.data().toString(), "a (2).txt");
 }
 
 void TestUploadsModel::afterglow()
