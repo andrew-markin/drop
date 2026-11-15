@@ -32,16 +32,33 @@ function apply() {
   }
 }
 
-// Android pauses the video when another app takes the sound, a notification for one, or when the
-// page is hidden, and the video does not go on by itself. Started again at once, or on a return to
-// the page or any tap there if that fails.
+// The system pauses the video when another app takes the sound, a notification for one, or when
+// the page is hidden, and the video does not go on by itself. Started again at once, or on a return
+// to the page or any tap there if that fails.
 function create() {
   const created = new NoSleep()
+  const video = created.noSleepVideo
   const resume = () => wanted && document.visibilityState === 'visible' && apply()
-  created.noSleepVideo?.addEventListener('pause', resume)
+  video?.addEventListener('pause', resume)
   document.addEventListener('visibilitychange', resume)
   document.addEventListener('click', resume, true)
+  if (video) show(video)
   return created
+}
+
+// iOS lets the screen sleep while a video plays out of the page, so it goes there, a pixel in a
+// corner that is still visible
+function show(video) {
+  Object.assign(video.style, {
+    position: 'fixed',
+    left: '0',
+    bottom: '0',
+    width: '1px',
+    height: '1px',
+    pointerEvents: 'none'
+  })
+  video.setAttribute('aria-hidden', 'true')
+  document.body.append(video)
 }
 
 function playing() {

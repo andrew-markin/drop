@@ -6,7 +6,7 @@ const fake = vi.hoisted(() => ({ allowed: false, enables: 0, disables: 0 }))
 vi.mock('nosleep.js', () => ({
   default: class {
     isEnabled = false
-    noSleepVideo = Object.assign(new EventTarget(), { paused: true })
+    noSleepVideo = Object.assign(new EventTarget(), { paused: true, style: {}, setAttribute() {} })
     constructor() {
       fake.video = this.noSleepVideo
     }
@@ -41,7 +41,10 @@ describe('keepAwake', () => {
 
   beforeEach(async () => {
     Object.assign(fake, { allowed: false, enables: 0, disables: 0 })
-    vi.stubGlobal('document', Object.assign(new EventTarget(), { visibilityState: 'visible' }))
+    vi.stubGlobal(
+      'document',
+      Object.assign(new EventTarget(), { visibilityState: 'visible', body: { append() {} } })
+    )
     vi.resetModules()
     awake = await import('@/awake')
   })
