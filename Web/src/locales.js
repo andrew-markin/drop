@@ -15,6 +15,8 @@ export default {
       `${done} of ${total} ${englishPlural.select(total) === 'one' ? 'file' : 'files'} sent`,
     sizeOf: (sent, total) => `${sent} of ${total}`,
     keepOpen: 'Keep this page open until all files are sent.',
+    keepOpenUnlock:
+      'Keep this page open until all files are sent. If the screen locks, unlock it and sending goes on.',
     alreadyOnComputer: 'Already on the computer',
     pickAgain: (sent, total) => `${sent} of ${total}, pick it again to continue`,
     emptyHint: 'Photos, videos and any other files go to the Downloads folder of the computer.',
@@ -34,6 +36,8 @@ export default {
       `Отправлено ${done} из ${total} ${russianPlural.select(total) === 'one' ? 'файла' : 'файлов'}`,
     sizeOf: (sent, total) => `${sent} из ${total}`,
     keepOpen: 'Не закрывайте страницу, пока не отправятся все файлы.',
+    keepOpenUnlock:
+      'Не закрывайте страницу, пока не отправятся все файлы. Если экран заблокируется, разблокируйте его, и отправка продолжится.',
     alreadyOnComputer: 'Уже на компьютере',
     pickAgain: (sent, total) => `${sent} из ${total}, выберите файл снова, чтобы продолжить`,
     emptyHint: 'Фото, видео и любые другие файлы попадут в папку «Загрузки» на компьютере.',

@@ -28,7 +28,7 @@
               </div>
             </div>
             <div v-if="state.busy" class="text-caption text-cream-muted q-mb-sm">
-              {{ t.keepOpen }}
+              {{ screenSleeps ? t.keepOpenUnlock : t.keepOpen }}
             </div>
             <div class="column no-wrap cards">
               <file-card
@@ -104,7 +104,7 @@
 import { computed, onBeforeUnmount, onMounted, shallowRef, useTemplateRef } from 'vue'
 
 import { Api, readEarlier } from '@/api'
-import { keepAwake, keepAwakeOnTap } from '@/awake'
+import { keepAwake, keepAwakeOnTap, sleepsAnyway } from '@/awake'
 import FileCard from '@/components/FileCard.vue'
 import { readSecret } from '@/crypto'
 import { useI18n } from '@/i18n'
@@ -142,6 +142,7 @@ const uploader = new Uploader(api, {
 })
 
 const state = shallowRef(snapshot(uploader))
+const screenSleeps = sleepsAnyway(navigator)
 
 const earlier = shallowRef([])
 // Picked again on this page, they show with the files being sent instead

@@ -129,3 +129,18 @@ describe('keepAwake', () => {
     expect(fake.enables).toBe(1)
   })
 })
+
+describe('sleepsAnyway', () => {
+  it('tells iPhones and iPads from other devices', async () => {
+    const { sleepsAnyway } = await import('@/awake')
+    const iPhone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15'
+    const mac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15'
+    const android = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/142.0 Mobile'
+    expect(sleepsAnyway({ userAgent: iPhone, platform: 'iPhone', maxTouchPoints: 5 })).toBe(true)
+    expect(sleepsAnyway({ userAgent: mac, platform: 'MacIntel', maxTouchPoints: 5 })).toBe(true)
+    expect(sleepsAnyway({ userAgent: mac, platform: 'MacIntel', maxTouchPoints: 0 })).toBe(false)
+    expect(sleepsAnyway({ userAgent: android, platform: 'Linux armv8l', maxTouchPoints: 5 })).toBe(
+      false
+    )
+  })
+})

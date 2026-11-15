@@ -32,9 +32,9 @@ function apply() {
   }
 }
 
-// Android pauses the video when another app takes the sound, a notification for one, or when the
-// page is hidden, and the video does not go on by itself. Started again at once, or on a return to
-// the page or any tap there if that fails.
+// The system pauses the video when another app takes the sound, a notification for one, or when
+// the page is hidden, and the video does not go on by itself. Started again at once, or on a return
+// to the page or any tap there if that fails.
 function create() {
   const created = new NoSleep()
   const resume = () => wanted && document.visibilityState === 'visible' && apply()
@@ -46,4 +46,11 @@ function create() {
 
 function playing() {
   return noSleep.isEnabled && !noSleep.noSleepVideo?.paused
+}
+
+// iOS 26 locks the screen on time while the video plays. The page goes on in the background for a
+// while, as the video plays sound, and then stops until the screen is unlocked. iPads tell they are
+// Macs, but Macs have no touch screen.
+export function sleepsAnyway({ userAgent, platform, maxTouchPoints }) {
+  return /iPhone|iPad|iPod/.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1)
 }
