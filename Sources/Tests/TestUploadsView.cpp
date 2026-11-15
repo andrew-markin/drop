@@ -1,4 +1,6 @@
 #include <QHeaderView>
+#include <QPainter>
+#include <QProxyStyle>
 #include <QScreen>
 #include <QScrollBar>
 #include <QTemporaryDir>
@@ -18,6 +20,8 @@ private slots:
     void columnsFitValues_data();
     void columnsFitValues();
     void scrollingLeavesNoLines();
+    void selectedTextStandsOut_data();
+    void selectedTextStandsOut();
 };
 
 void TestUploadsView::initTestCase()
@@ -116,6 +120,84 @@ void TestUploadsView::scrollingLeavesNoLines()
         QCOMPARE(shown.size(), painted.size());
         QVERIFY2(shown == painted, qPrintable(QString("Differs after scrolling to %1").arg(scrollBar->value())));
     }
+}
+
+namespace {
+
+// Draws the selection in one color, as the Windows styles draw a light one
+class SelectionStyle : public QProxyStyle
+{
+public:
+    SelectionStyle(const QColor& color) : QProxyStyle("Fusion"), m_color(color) {}
+
+    void drawPrimitive(PrimitiveElement element, const QStyleOption* option, QPainter* painter,
+                       const QWidget* widget) const override
+    {
+        if (element == PE_PanelItemViewItem && (option->state & State_Selected))
+        {
+            painter->fillRect(option->rect, m_color);
+            return;
+        }
+
+        QProxyStyle::drawPrimitive(element, option, painter, widget);
+    }
+
+private:
+    QColor m_color;
+};
+
+} // namespace
+
+void TestUploadsView::selectedTextStandsOut_data()
+{
+    QTest::addColumn<QColor>("selection");
+
+    QTest::addRow("light") << QColor(0xcc, 0xe8, 0xff);
+    QTest::addRow("dark") << QColor(0x30, 0x60, 0xa0);
+}
+
+// The palette has white for the highlighted text whatever selection the style draws
+void TestUploadsView::selectedTextStandsOut()
+{
+    QFETCH(QColor, selection);
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    Uploads uploads(QDir(temporaryDir.filePath("Downloads")), 4);
+    UploadsModel model(&uploads);
+    UploadsView view(&model);
+
+    SelectionStyle style(selection);
+    view.setStyle(&style);
+
+    QPalette palette = view.palette();
+    palette.setColor(QPalette::Text, Qt::black);
+    palette.setColor(QPalette::HighlightedText, Qt::white);
+    view.setPalette(palette);
+
+    Uploads::Error error;
+    uploads.announce("WWWWWWWWWWWWWWWW.JPG", 1000, 0, QByteArray(Uploads::HeadSize, 'h'), &error);
+    view.resize(400, 200);
+    view.selectAll();
+
+    QRect rect = view.visualRect(model.index(0, UploadsModel::NameColumn));
+    QImage image = view.viewport()->grab(rect).toImage();
+
+    // The pixel of the text farthest from the selection, as text is drawn smoothed. The file has
+    // nothing on the computer yet, so its text is half transparent: white on the light selection
+    // differs by less than a tenth.
+    int farthest = 0;
+
+    for (int y = 0; y < image.height(); y++)
+    {
+        for (int x = 0; x < image.width(); x++)
+        {
+            farthest = qMax(farthest, qAbs(qGray(image.pixel(x, y)) - qGray(selection.rgb())));
+        }
+    }
+
+    QVERIFY2(farthest > 64, qPrintable(QString("The text differs from the selection by %1 of 255").arg(farthest)));
 }
 
 QTEST_MAIN(TestUploadsView)

@@ -21,6 +21,9 @@ public:
 
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+
+private:
+    QColor selectedTextColor(const QStyleOptionViewItem& option, QPalette::ColorGroup group) const;
 };
 
 #endif // UPLOADSDELEGATE_H

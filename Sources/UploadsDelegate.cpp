@@ -3,6 +3,7 @@
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QFontMetricsF>
+#include <QImage>
 #include <QPainter>
 #include <QtMath>
 
@@ -12,12 +13,20 @@
 namespace {
 
 // Over the row background, so the text stays readable over the filled part: of the progress color
-// on a plain row, of the highlighted text color on a selected one, which is the same tone turned over
+// on a plain row, of the text color on a selected one
 static const qreal ProgressOpacity = 0.35;
 static const qreal SelectedProgressOpacity = 0.25;
 
 // Of the text of a file that is announced but has nothing on the computer yet: it may never come
 static const qreal PendingOpacity = 0.5;
+
+static const int SelectionProbeSize = 16;
+
+// Relative luminance, without the gamma: enough to tell a light color from a dark one
+qreal luminance(const QColor& color)
+{
+    return 0.2126 * color.redF() + 0.7152 * color.greenF() + 0.0722 * color.blueF();
+}
 
 } // namespace
 
@@ -66,7 +75,7 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
 
         if (!filledRect.isEmpty())
         {
-            QColor color = selected ? option.palette.color(colorGroup, QPalette::HighlightedText)
+            QColor color = selected ? selectedTextColor(option, colorGroup)
                            : failed ? Colors::error(option.palette, colorGroup)
                                     : Colors::progress(option.palette, colorGroup);
             color.setAlphaF((selected ? SelectedProgressOpacity : ProgressOpacity) * afterglow);
@@ -87,7 +96,8 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     }
 
     painter->setFont(option.font);
-    QColor textColor = option.palette.color(colorGroup, selected ? QPalette::HighlightedText : QPalette::Text);
+    QColor textColor =
+        selected ? selectedTextColor(option, colorGroup) : option.palette.color(colorGroup, QPalette::Text);
 
     if (failed && !selected && index.column() == UploadsModel::StatusColumn)
     {
@@ -98,6 +108,33 @@ void UploadsDelegate::paint(QPainter* painter, const QStyleOptionViewItem& optio
     painter->drawText(textRect, int(alignment), text);
 
     painter->restore();
+}
+
+// Styles draw the selection their own way and do not tell its color. The Windows ones draw a light
+// one and keep the text dark, while the palette still has white for the highlighted text. So the
+// selection is drawn aside, and of the two text colors the one farther from it wins.
+QColor UploadsDelegate::selectedTextColor(const QStyleOptionViewItem& option, QPalette::ColorGroup group) const
+{
+    QImage image(SelectionProbeSize, SelectionProbeSize, QImage::Format_ARGB32_Premultiplied);
+    image.fill(option.palette.color(group, QPalette::Base));
+
+    QStyleOptionViewItem probeOption = option;
+    probeOption.rect = image.rect();
+    probeOption.state &= ~QStyle::State_MouseOver;
+    probeOption.text.clear();
+
+    const QWidget* widget = option.widget;
+    QStyle* style = widget ? widget->style() : QApplication::style();
+
+    QPainter painter(&image);
+    style->drawPrimitive(QStyle::PE_PanelItemViewItem, &probeOption, &painter, widget);
+    painter.end();
+
+    qreal background = luminance(image.pixelColor(SelectionProbeSize / 2, SelectionProbeSize / 2));
+    QColor highlightedText = option.palette.color(group, QPalette::HighlightedText);
+    QColor text = option.palette.color(group, QPalette::Text);
+
+    return qAbs(luminance(highlightedText) - background) >= qAbs(luminance(text) - background) ? highlightedText : text;
 }
 
 QSize UploadsDelegate::sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const
