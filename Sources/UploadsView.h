@@ -3,6 +3,7 @@
 
 #include <QTreeView>
 
+class UploadsHeaderView;
 class UploadsModel;
 
 // The table of the files of the drop, the received ones open from it
@@ -19,7 +20,6 @@ public:
 protected:
     void changeEvent(QEvent* event) override;
     void contextMenuEvent(QContextMenuEvent* event) override;
-    void paintEvent(QPaintEvent* event) override;
 
 private slots:
     void fitColumns(int firstRow, int lastRow);
@@ -35,7 +35,7 @@ private:
     int textWidth(const QString& text) const;
 
 private:
-    QColor m_lineColor;
+    UploadsHeaderView* m_header;
 };
 
 #endif // UPLOADSVIEW_H

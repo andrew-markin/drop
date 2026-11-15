@@ -22,9 +22,9 @@ static const int FrameProbeSize = 40;
 
 } // namespace
 
-UploadsView::UploadsView(UploadsModel* model, QWidget* parent) : QTreeView(parent)
+UploadsView::UploadsView(UploadsModel* model, QWidget* parent) : QTreeView(parent), m_header(new UploadsHeaderView(this))
 {
-    setHeader(new UploadsHeaderView(this));
+    setHeader(m_header);
     setItemDelegate(new UploadsDelegate(this));
     setModel(model);
 
@@ -179,16 +179,6 @@ int UploadsView::textWidth(const QString& text) const
     return UploadsDelegate::cellWidth(font(), text);
 }
 
-void UploadsView::paintEvent(QPaintEvent* event)
-{
-    QTreeView::paintEvent(event);
-
-    // The line under the header goes on top of the rows: with fractional scaling the bottom of the
-    // header falls between pixels, and a line drawn there leaves a strip of the header under it
-    QPainter painter(viewport());
-    painter.fillRect(QRect(0, 0, viewport()->width(), 1), m_lineColor);
-}
-
 // Styles draw frames their own way and do not tell the color, so it is taken from a frame drawn
 // aside: the middle of its top edge, away from rounded corners
 void UploadsView::updateLineColor()
@@ -204,6 +194,5 @@ void UploadsView::updateLineColor()
     style()->drawControl(QStyle::CE_ShapedFrame, &option, &painter, this);
     painter.end();
 
-    m_lineColor = image.pixelColor(FrameProbeSize / 2, 0);
-    viewport()->update();
+    m_header->setLineColor(image.pixelColor(FrameProbeSize / 2, 0));
 }

@@ -31,11 +31,23 @@ QSize UploadsHeaderView::sizeHint() const
     return size;
 }
 
+void UploadsHeaderView::setLineColor(const QColor& color)
+{
+    m_lineColor = color;
+    viewport()->update();
+}
+
 void UploadsHeaderView::paintEvent(QPaintEvent* event)
 {
     // Also past the last section
     QPainter painter(viewport());
-    painter.fillRect(viewport()->rect(), backgroundColor(palette()));
+    QRect rect = viewport()->rect();
+    painter.fillRect(rect, backgroundColor(palette()));
+
+    // The line is a filled rectangle: a pen line leaves a strip of the band under it with fractional
+    // scaling
+    rect.setTop(rect.bottom());
+    painter.fillRect(rect, m_lineColor);
     painter.end();
 
     QHeaderView::paintEvent(event);

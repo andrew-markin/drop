@@ -1,4 +1,6 @@
 #include <QHeaderView>
+#include <QScreen>
+#include <QScrollBar>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -15,6 +17,7 @@ private slots:
     void initTestCase();
     void columnsFitValues_data();
     void columnsFitValues();
+    void scrollingLeavesNoLines();
 };
 
 void TestUploadsView::initTestCase()
@@ -75,6 +78,43 @@ void TestUploadsView::columnsFitValues()
         {
             QCOMPARE(view.fontMetrics().elidedText(text, Qt::ElideRight, room), text);
         }
+    }
+}
+
+// Scrolling moves the pixels already on the screen, what is drawn over the rows must not move with them
+void TestUploadsView::scrollingLeavesNoLines()
+{
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    Uploads uploads(QDir(temporaryDir.filePath("Downloads")), 4);
+    UploadsModel model(&uploads);
+    UploadsView view(&model);
+
+    for (int index = 0; index < 50; index++)
+    {
+        Uploads::Error error;
+        uploads.announce(QString("IMG_%1.JPG").arg(index), 1000, 0, QByteArray(Uploads::HeadSize, 'h'), &error);
+    }
+
+    view.resize(400, 300);
+    view.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&view));
+
+    QScrollBar* scrollBar = view.verticalScrollBar();
+    QVERIFY(scrollBar->maximum() > 6);
+
+    // Down and back up, by a few rows as the mouse wheel does
+    for (int step : {3, 3, -3, -3})
+    {
+        scrollBar->setValue(scrollBar->value() + step);
+        QApplication::processEvents();
+
+        // What is on the screen against the whole view painted anew
+        QImage shown = view.screen()->grabWindow(view.winId()).toImage().convertToFormat(QImage::Format_RGB32);
+        QImage painted = view.grab().toImage().convertToFormat(QImage::Format_RGB32);
+        QCOMPARE(shown.size(), painted.size());
+        QVERIFY2(shown == painted, qPrintable(QString("Differs after scrolling to %1").arg(scrollBar->value())));
     }
 }
 
