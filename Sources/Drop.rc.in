@@ -15,9 +15,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
+            VALUE "CompanyName", "@PROJECT_DEVELOPER_TITLE@"
             VALUE "ProductName", "@PROJECT_TITLE@"
             VALUE "ProductVersion", "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.0.0"
-            VALUE "FileDescription", "@PROJECT_TITLE@ - @PROJECT_DESCRIPTION@"
+            VALUE "FileDescription", "@PROJECT_TITLE@"
+            VALUE "FileVersion", "@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.0.0"
+            VALUE "InternalName", "@PROJECT_NAME@"
+            VALUE "OriginalFilename", "@PROJECT_NAME@.exe"
             VALUE "LegalCopyright",  "@PROJECT_COPYRIGHT@"
         END
     END
