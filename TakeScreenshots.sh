@@ -37,8 +37,8 @@
 # 4. Check from the host:
 #      ssh -i ~/.ssh/drop_vm_ed25519 -p 2222 developer@127.0.0.1 true
 #
-# The VM must be running with the user logged in. Other VM names, users, ports or keys are set
-# in .env (see .env.example).
+# A stopped VM is started headless and shut down on exit, a running one is left running. Other VM
+# names, users, ports or keys are set in .env (see .env.example).
 
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,6 +70,50 @@ fi
 
 SSH_OPTIONS=(-i "$SSH_KEY" -p "$SSH_PORT" -o BatchMode=yes)
 SCP_OPTIONS=(-q -i "$SSH_KEY" -P "$SSH_PORT" -o BatchMode=yes)
+
+# Start the VM if it is stopped and shut it down on exit, so it is not left running
+
+STARTED_VM=
+
+stop_vm() {
+    [ -n "$STARTED_VM" ] || return 0
+
+    VBoxManage controlvm "$VM_NAME" acpipowerbutton 2>/dev/null || true
+
+    for i in $(seq 60); do
+        VBoxManage list runningvms | grep -qF "\"$VM_NAME\"" || break
+        sleep 2
+    done
+
+    if VBoxManage list runningvms | grep -qF "\"$VM_NAME\""; then
+        VBoxManage controlvm "$VM_NAME" poweroff
+    fi
+
+    echo "The VM is shut down."
+}
+
+trap stop_vm EXIT
+
+if ! VBoxManage list runningvms | grep -qF "\"$VM_NAME\""; then
+    VBoxManage startvm "$VM_NAME" --type headless
+    STARTED_VM=1
+
+    # Wait for SSH and the desktop of the automatically logged in user
+    READY=
+    for i in $(seq 90); do
+        ssh "${SSH_OPTIONS[@]}" -o ConnectTimeout=2 "$SSH_TARGET" \
+            'pgrep -u $USER -x gnome-shell && ls /run/user/$(id -u)/.mutter-Xwaylandauth.*' \
+            >/dev/null 2>&1 && READY=1 && break
+        sleep 2
+    done
+
+    if [ -z "$READY" ]; then
+        echo "ERROR: The desktop of the VM did not start."
+        exit 1
+    fi
+
+    sleep 10 # Let the desktop settle
+fi
 
 # Runs a command in the guest with the environment of its GNOME session
 guest() {
@@ -118,11 +162,13 @@ ORIGINAL_COLOR_SCHEME=$(guest "gsettings get org.gnome.desktop.interface color-s
 ORIGINAL_GTK_THEME=$(guest "gsettings get org.gnome.desktop.interface gtk-theme")
 
 cleanup() {
+    set +e # Shut the VM down even if the guest does not answer
     stop_drop
     guest "gsettings set org.gnome.desktop.interface color-scheme $ORIGINAL_COLOR_SCHEME
            gsettings set org.gnome.desktop.interface gtk-theme $ORIGINAL_GTK_THEME
            rm -rf ~/DropScreenshots"
     rm -rf "$TEMPORARY"
+    stop_vm
 }
 
 trap cleanup EXIT
