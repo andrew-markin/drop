@@ -7,6 +7,8 @@
 your computer over the local network. No cables, no cloud, no internet access, and nothing to
 install on the phone: scan a QR code and pick the files.
 
+🏠 **Website:** [drop.mayfleet.com](https://drop.mayfleet.com/)
+
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="Assets/Window-Dark.png">
@@ -172,6 +174,16 @@ The script runs the latest `.deb` package from the `Release` folder in the VM (o
 passed as an argument) without installing it, captures the window in light and dark themes and
 the page during one drop, and updates the image size in README. One-time VM preparation is
 described at the top of the script.
+
+### Website
+
+The site [drop.mayfleet.com](https://drop.mayfleet.com/) is built with [Hugo](https://gohugo.io/)
+from the `Site` folder and published to GitHub Pages by `.github/workflows/site.yml` on changes in
+`Site`, `Assets` or `Sources/Icons` and on every published release, so download links always
+point to the latest release. The text of the page is kept in `Site/content/_index.<language>.md`;
+the build fails if a translation misses texts of the English page. To preview the site locally:
+
+    hugo server --source Site
 
 ## License
 
