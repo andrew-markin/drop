@@ -1,0 +1,74 @@
+name: Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Site/**"
+      - "Assets/**"
+      - "Sources/Icons/**"
+      - ".github/workflows/site.yml"
+  pull_request:
+    paths:
+      - "Site/**"
+      - "Assets/**"
+      - "Sources/Icons/**"
+      - ".github/workflows/site.yml"
+  # Download links point to the latest published release
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HUGO_VERSION: "0.169.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Hugo
+        run: |
+          ARCHIVE="hugo_${HUGO_VERSION}_linux-amd64.tar.gz"
+          BASE_URL="https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "$BASE_URL/$ARCHIVE"
+          curl -fsSL "$BASE_URL/hugo_${HUGO_VERSION}_checksums.txt" | grep " $ARCHIVE\$" | sha256sum -c
+          tar -xzf "$ARCHIVE" hugo
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Get latest release version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          echo "HUGO_PARAMS_VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Build site
+        run: hugo --source Site --gc --minify --panicOnWarning
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: Site/public
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

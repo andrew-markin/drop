@@ -1,0 +1,42 @@
+baseURL = "https://drop.mayfleet.com/"
+title = "Drop"
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+disableKinds = ["taxonomy", "term", "section", "page", "RSS"]
+enableRobotsTXT = true
+
+[params]
+  repo = "https://github.com/andrew-markin/drop"
+  # Overridden in CI by HUGO_PARAMS_VERSION with the tag of the latest published release
+  version = "0.1"
+
+[markup.goldmark.renderer]
+  unsafe = false
+
+# Images are shared with README and the application, so their folders are mounted instead of copied
+[[module.mounts]]
+  source = "../Assets"
+  target = "assets/images"
+[[module.mounts]]
+  source = "../Sources/Icons"
+  target = "assets/icons"
+[[module.mounts]]
+  source = "assets"
+  target = "assets"
+
+[sitemap]
+  changeFreq = "monthly"
+
+# Keys are URL prefixes. Screenshot suffix matches file names in Assets (Window-Light.<suffix>.png),
+# languages without such files use English screenshots.
+[languages]
+  [languages.en]
+    weight = 1
+    locale = "en"
+    label = "English"
+  [languages.ru]
+    weight = 2
+    locale = "ru"
+    label = "Русский"
+    [languages.ru.params]
+      screenshotSuffix = "ru"

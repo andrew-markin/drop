@@ -1,0 +1,241 @@
+{{- $p := .Params -}}
+{{- $version := site.Params.version -}}
+{{- $repo := site.Params.repo -}}
+{{- $readme := printf "%s/blob/main/%s" $repo $p.readme -}}
+{{- $release := printf "%s/releases/download/v%s" $repo $version -}}
+{{- $downloads := dict
+  "windows" (printf "%s/Drop-%s.exe" $release $version)
+  "deb" (printf "%s/drop-%s-amd64.deb" $release $version)
+  "rpm" (printf "%s/drop-%s-1.x86_64.rpm" $release $version)
+-}}
+{{- $css := resources.Get "css/site.css" | minify | fingerprint -}}
+{{- $js := resources.Get "js/site.js" | minify | fingerprint -}}
+{{- $favicon := resources.Get "icons/Drop.svg" | minify | fingerprint -}}
+{{- $ogImage := resources.Get (printf "images/Window-Light.%s.png" site.Params.screenshotSuffix) | default (resources.Get "images/Window-Light.png") -}}
+{{- with and (ne .Language.Lang "en") (index (where .AllTranslations "Language.Lang" "en") 0) -}}
+  {{- $en := . -}}
+  {{- range $key := slice "title" "description" "readme" "ui" "hero" "features" "compare" "uses" "how" "download" "faq" "footer" -}}
+    {{- partial "check-structure.html" (dict "lang" $.Language.Lang "path" $key "ref" (index $en.Params $key) "value" (index $.Params $key)) -}}
+  {{- end -}}
+{{- end -}}
+<!doctype html>
+<html lang="{{ site.Language.Locale }}" dir="{{ site.Language.Direction | default "ltr" }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ .Title }}</title>
+<meta name="description" content="{{ .Description }}">
+<link rel="canonical" href="{{ .Permalink }}">
+{{- range .AllTranslations }}
+<link rel="alternate" hreflang="{{ .Language.Locale }}" href="{{ .Permalink }}">
+{{- end }}
+<link rel="alternate" hreflang="x-default" href="{{ site.BaseURL }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Drop">
+<meta property="og:title" content="{{ .Title }}">
+<meta property="og:description" content="{{ .Description }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta property="og:locale" content="{{ replace site.Language.Locale "-" "_" }}">
+<meta property="og:image" content="{{ $ogImage.Permalink }}">
+<meta property="og:image:width" content="{{ $ogImage.Width }}">
+<meta property="og:image:height" content="{{ $ogImage.Height }}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#fbf6ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2b2724" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="{{ $favicon.RelPermalink }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ $css.RelPermalink }}" integrity="{{ $css.Data.Integrity }}">
+<script src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}" defer></script>
+{{- $faq := slice -}}
+{{- range $p.faq.items -}}
+  {{- $faq = $faq | append (dict "@type" "Question" "name" .q "acceptedAnswer" (dict "@type" "Answer" "text" (.a | markdownify | plainify))) -}}
+{{- end -}}
+{{- $ld := slice
+  (dict
+    "@context" "https://schema.org"
+    "@type" "SoftwareApplication"
+    "name" "Drop"
+    "description" .Description
+    "url" .Permalink
+    "inLanguage" site.Language.Locale
+    "applicationCategory" "UtilitiesApplication"
+    "operatingSystem" "Windows 10, Windows 11, Linux"
+    "softwareVersion" $version
+    "downloadUrl" (printf "%s/releases/latest" $repo)
+    "license" "https://www.gnu.org/licenses/gpl-3.0.html"
+    "image" $ogImage.Permalink
+    "offers" (dict "@type" "Offer" "price" "0" "priceCurrency" "USD"))
+  (dict
+    "@context" "https://schema.org"
+    "@type" "FAQPage"
+    "inLanguage" site.Language.Locale
+    "mainEntity" $faq)
+}}
+<script type="application/ld+json">{{ $ld | jsonify | safeJS }}</script>
+</head>
+<body>
+<a class="skip" href="#main">{{ $p.ui.skip }}</a>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <a class="brand" href="{{ .RelPermalink }}">
+      <img src="{{ $favicon.RelPermalink }}" width="28" height="28" alt="">
+      <span>Drop</span>
+    </a>
+    <nav class="nav" aria-label="Drop">
+      <a href="#features">{{ $p.ui.nav_features }}</a>
+      <a href="#compare">{{ $p.ui.nav_compare }}</a>
+      <a href="#faq">{{ $p.ui.nav_faq }}</a>
+      <a class="nav-download" href="#download">{{ $p.ui.nav_download }}</a>
+    </nav>
+    <details class="lang">
+      <summary aria-label="{{ $p.ui.language }}">{{ partial "icon.html" "globe" }}<span>{{ site.Language.Label }}</span></summary>
+      <ul>
+        {{- range .AllTranslations }}
+        <li><a href="{{ .RelPermalink }}" hreflang="{{ .Language.Locale }}" lang="{{ .Language.Locale }}"{{ if eq .Language.Lang site.Language.Lang }} aria-current="page"{{ end }}>{{ .Language.Label }}</a></li>
+        {{- end }}
+      </ul>
+    </details>
+    <a class="github" href="{{ $repo }}" aria-label="{{ $p.ui.github }}" title="{{ $p.ui.github }}">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/></svg>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <div class="hero-text">
+        <h1>{{ $p.hero.title }}</h1>
+        <p class="lead">{{ $p.hero.lead | markdownify }}</p>
+        <div class="actions">
+          <a class="button primary" href="#download">{{ partial "icon.html" "download" }}{{ $p.hero.download }}</a>
+          <a class="button" href="{{ $repo }}">GitHub</a>
+        </div>
+        <p class="hint">{{ replace $p.hero.download_hint "{version}" $version }}</p>
+        <ul class="facts">
+          {{- range $p.hero.facts }}
+          <li>{{ partial "icon.html" "check" }}{{ . }}</li>
+          {{- end }}
+        </ul>
+      </div>
+      <div class="hero-shot">
+        {{ partial "screenshot.html" (dict "name" "Window" "alt" $p.hero.screenshot_alt) }}
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="section">
+    <div class="wrap">
+      <h2>{{ $p.features.title | markdownify }}</h2>
+      <div class="grid features">
+        {{- range $p.features.items }}
+        <article class="card">
+          <div class="badge">{{ partial "icon.html" .id }}</div>
+          <h3>{{ .title }}</h3>
+          <p>{{ .text | markdownify }}</p>
+        </article>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+
+  <section id="compare" class="section alt">
+    <div class="wrap narrow">
+      <h2>{{ $p.compare.title | markdownify }}</h2>
+      <p class="section-lead">{{ $p.compare.lead | markdownify }}</p>
+      <table class="compare">
+        <thead><tr><td></td><th scope="col">{{ $p.compare.other }}</th><th scope="col">Drop</th></tr></thead>
+        <tbody>
+          {{- range $p.compare.rows }}
+          <tr>
+            <th scope="row">{{ .case | markdownify }}</th>
+            <td class="bad" data-label="{{ $p.compare.other }}">{{ partial "icon.html" "cross" }}<span>{{ .other | markdownify }}</span></td>
+            <td class="good" data-label="Drop">{{ partial "icon.html" "check" }}<span>{{ .drop | markdownify }}</span></td>
+          </tr>
+          {{- end }}
+        </tbody>
+      </table>
+      <p class="note">{{ $p.compare.note | markdownify }}</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2>{{ $p.uses.title | markdownify }}</h2>
+      <div class="grid uses">
+        {{- range $p.uses.items }}
+        <article class="card">
+          <div class="badge">{{ partial "icon.html" .id }}</div>
+          <h3>{{ .title }}</h3>
+          <p>{{ .text | markdownify }}</p>
+        </article>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="wrap how">
+      <div>
+        <h2>{{ $p.how.title | markdownify }}</h2>
+        <ol class="steps">
+          {{- range $p.how.steps }}
+          <li>
+            <h3>{{ .title }}</h3>
+            <p>{{ .text | markdownify }}</p>
+          </li>
+          {{- end }}
+        </ol>
+        <p class="more"><a href="{{ $readme }}">{{ $p.how.guide }} →</a></p>
+      </div>
+      <figure class="phone">
+        {{- $page := resources.Get (printf "images/Page.%s.png" site.Params.screenshotSuffix) | default (resources.Get "images/Page.png") }}
+        {{- $page = $page.Process "webp q90" }}
+        <img src="{{ $page.RelPermalink }}" width="{{ div $page.Width 2 }}" height="{{ div $page.Height 2 }}" alt="{{ $p.how.page_alt }}" loading="lazy" decoding="async" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
+        <figcaption>{{ $p.how.page_caption | markdownify }}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="download" class="section">
+    <div class="wrap">
+      <h2>{{ $p.download.title | markdownify }}</h2>
+      <p class="section-lead">{{ replace $p.download.lead "{version}" $version | markdownify }}</p>
+      <div class="grid downloads">
+        {{- range slice "windows" "deb" "rpm" }}
+        {{- $d := index $p.download . }}
+        <article class="card download" data-os="{{ . }}">
+          <h3>{{ $d.title }}</h3>
+          <p>{{ $d.text | markdownify }}</p>
+          <a class="button" href="{{ index $downloads . }}">{{ partial "icon.html" "download" }}{{ $d.button }}</a>
+        </article>
+        {{- end }}
+      </div>
+      <p class="note">{{ $p.download.requirements | markdownify }}</p>
+      <p class="note">{{ $p.download.verify | markdownify }} <a href="{{ $repo }}/releases">{{ $p.download.all_releases }} →</a></p>
+    </div>
+  </section>
+
+  <section id="faq" class="section alt">
+    <div class="wrap narrow">
+      <h2>{{ $p.faq.title | markdownify }}</h2>
+      <div class="faq">
+        {{- range $p.faq.items }}
+        <details>
+          <summary>{{ .q | markdownify }}</summary>
+          <p>{{ .a | markdownify }}</p>
+        </details>
+        {{- end }}
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="bottom">
+  <div class="wrap bottom-inner">
+    <p>{{ $p.footer.license }}</p>
+    <p><a href="{{ $repo }}">{{ $p.footer.source }}</a> · <a href="{{ $repo }}/issues">{{ $p.footer.issues }}</a></p>
+  </div>
+</footer>
+</body>
+</html>

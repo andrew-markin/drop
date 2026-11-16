@@ -1,0 +1,13 @@
+{{- /* Light and dark variants of a screenshot from Assets, in the page language when there is one */ -}}
+{{- $suffix := site.Params.screenshotSuffix -}}
+{{- $variants := dict -}}
+{{- range slice "Light" "Dark" -}}
+  {{- $image := resources.Get (printf "images/%s-%s.%s.png" $.name . $suffix) | default (resources.Get (printf "images/%s-%s.png" $.name .)) -}}
+  {{- $variants = merge $variants (dict . ($image.Process "webp q90")) -}}
+{{- end -}}
+{{- $light := $variants.Light -}}
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="{{ $variants.Dark.RelPermalink }}">
+  <img src="{{ $light.RelPermalink }}" width="{{ $light.Width }}" height="{{ $light.Height }}" alt="{{ .alt }}"{{ if .lazy }} loading="lazy"{{ end }} decoding="async" onload="this.classList.add('loaded')" onerror="this.classList.add('loaded')">
+</picture>
+{{- /**/ -}}

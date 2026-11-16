@@ -13,3 +13,8 @@ CMakeLists.txt.user
 node_modules/
 dist/
 .eslintcache
+
+# Site
+/Site/public
+/Site/resources
+/Site/.hugo_build.lock

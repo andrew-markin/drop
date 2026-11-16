@@ -1,0 +1,29 @@
+{{- /* Fails the build when a translation misses texts of the English page or has different list items */ -}}
+{{- $where := printf "%s: %s" .lang .path -}}
+{{- $value := .value -}}
+{{- if reflect.IsMap .ref -}}
+  {{- if not (reflect.IsMap $value) -}}
+    {{- errorf "%s must have the same keys as in English" $where -}}
+  {{- else -}}
+    {{- range $key, $ref := .ref -}}
+      {{- partial "check-structure.html" (dict "lang" $.lang "path" (printf "%s.%s" $.path $key) "ref" $ref "value" (index $value $key)) -}}
+    {{- end -}}
+    {{- range $key, $_ := $value -}}
+      {{- if not (isset $.ref $key) -}}
+        {{- errorf "%s.%s is not in English" $where $key -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- else if reflect.IsSlice .ref -}}
+  {{- if or (not (reflect.IsSlice $value)) (ne (len $value) (len .ref)) -}}
+    {{- errorf "%s must have %d items as in English" $where (len .ref) -}}
+  {{- else -}}
+    {{- range $i, $ref := .ref -}}
+      {{- partial "check-structure.html" (dict "lang" $.lang "path" (printf "%s[%d]" $.path $i) "ref" $ref "value" (index $value $i)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- else if not $value -}}
+  {{- errorf "%s is missing" $where -}}
+{{- else if and (hasSuffix .path ".id") (ne $value .ref) -}}
+  {{- errorf "%s must be %q as in English" $where .ref -}}
+{{- end -}}
