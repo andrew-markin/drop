@@ -108,7 +108,8 @@ replace it. Use Drop on networks you trust, such as your home Wi-Fi. The protoco
 - **Windows:** Windows 10 / 11 (64-bit)
 - **Linux (DEB-based):** Ubuntu 22.04 or newer, Debian 12 or newer, and other compatible
   distributions
-- **Linux (RPM-based):** Fedora 39 or newer, RHEL 9 / AlmaLinux 9 or newer
+- **Linux (RPM-based):** RED OS 7.3 or newer, RHEL / AlmaLinux / Rocky Linux 8 or newer, Fedora
+  and other compatible distributions
 - **Devices that send files:** any modern browser, such as Safari on iPhone and iPad or Chrome
   on Android
 
@@ -133,9 +134,9 @@ and compatible distributions.
 
     sudo dnf install ./drop-*.rpm
 
-The package is built on Fedora 39 and should work on Fedora 39+, RHEL 9+, AlmaLinux 9+, and
-compatible distributions. If a firewall blocks incoming connections, allow them on the local
-network.
+The package is built on AlmaLinux 8 and should work on RED OS 7.3+, RHEL / AlmaLinux / Rocky
+Linux 8+, Fedora, and compatible distributions. If a firewall blocks incoming connections, allow
+them on the local network.
 
 ### Verifying the Download
 
@@ -155,8 +156,8 @@ your package and check that the package was not altered:
 You need Qt 6.11 with the HTTP Server module, libsodium 1.0.18 or newer, Node.js 22 or newer and
 CMake. Packages are built the same way as in CI:
 
-- **Linux:** `./ReleaseUbuntu.sh` or `./ReleaseFedora.sh` build in Docker images from
-  `Dockerfile.ubuntu` and `Dockerfile.fedora`, or locally if `QT_PREFIX` is set in `.env`
+- **Linux:** `./ReleaseDEB.sh` or `./ReleaseRPM.sh` build in Docker images from
+  `Dockerfile.deb` and `Dockerfile.rpm`, or locally if `QT_PREFIX` is set in `.env`
   (see `.env.example`).
 - **Windows:** install libsodium with `vcpkg install libsodium:x64-windows-static-md`, set
   `QT_PREFIX` and `VCPKG_ROOT` in `.env`, and run `ReleaseWindows.cmd`.

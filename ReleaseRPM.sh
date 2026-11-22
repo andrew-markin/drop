@@ -33,12 +33,12 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-IMAGE_NAME="drop-fedora-builder"
+IMAGE_NAME="drop-rpm-builder"
 
 # Build Docker image if it doesn't exist
 if ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
     echo "Docker image '$IMAGE_NAME' not found. Building..."
-    docker build -t "$IMAGE_NAME" -f Dockerfile.fedora .
+    docker build -t "$IMAGE_NAME" -f Dockerfile.rpm .
 fi
 
 docker run --rm \
@@ -47,4 +47,4 @@ docker run --rm \
     -v "$SCRIPT_DIR:/workspace" \
     -w /workspace \
     "$IMAGE_NAME" \
-    /bin/bash -c "./ReleaseFedora.sh"
+    /bin/bash -c "./ReleaseRPM.sh"

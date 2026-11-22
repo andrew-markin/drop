@@ -64,7 +64,7 @@ if [ -z "$PACKAGE" ]; then
 fi
 
 if [ ! -f "$PACKAGE" ]; then
-    echo "ERROR: DEB package not found. Run ./ReleaseUbuntu.sh or pass the package path."
+    echo "ERROR: DEB package not found. Run ./ReleaseDEB.sh or pass the package path."
     exit 1
 fi
 

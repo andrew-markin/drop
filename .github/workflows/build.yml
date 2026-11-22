@@ -67,7 +67,7 @@ jobs:
     timeout-minutes: 300 # Building Qt for a new builder image takes a while
     # A new push to main waits instead of cancelling, so a builder image that took hours is pushed
     concurrency:
-      group: build-linux-${{ matrix.distro }}-${{ github.ref }}
+      group: build-linux-${{ matrix.format }}-${{ github.ref }}
       cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
     permissions:
       contents: read
@@ -76,12 +76,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - distro: ubuntu
-            script: ReleaseUbuntu.sh
-            package: deb
-          - distro: fedora
-            script: ReleaseFedora.sh
-            package: rpm
+          - format: deb
+            script: ReleaseDEB.sh
+          - format: rpm
+            script: ReleaseRPM.sh
     steps:
       - uses: actions/checkout@v7
 
@@ -96,7 +94,7 @@ jobs:
       # Builder image is tagged with the Dockerfile hash, so it is rebuilt only when the Dockerfile changes
       - name: Prepare builder image
         env:
-          DISTRO: ${{ matrix.distro }}
+          DISTRO: ${{ matrix.format }}
           PUSH_IMAGE: ${{ github.event_name != 'pull_request' }}
         run: |
           OWNER="${GITHUB_REPOSITORY_OWNER,,}"
@@ -128,7 +126,7 @@ jobs:
       - name: Build and test
         run: |
           docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/workspace" -w /workspace \
-                     "drop-${{ matrix.distro }}-builder" /bin/bash -ec '
+                     "drop-${{ matrix.format }}-builder" /bin/bash -ec '
             cmake -S Sources -B Builds/Tests -G Ninja -DCMAKE_PREFIX_PATH="$QT_PREFIX" -DDROP_BUILD_TESTS=ON
             cmake --build Builds/Tests --parallel
             ctest --test-dir Builds/Tests --output-on-failure --no-tests=error
@@ -139,8 +137,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: package-${{ matrix.package }}
-          path: Release/*.${{ matrix.package }}
+          name: package-${{ matrix.format }}
+          path: Release/*.${{ matrix.format }}
           if-no-files-found: error
 
   build-windows:

@@ -6,7 +6,7 @@ the release commit (Actions, the run, *Artifacts*).
 
 ## Desktop
 
-For each of Windows, Ubuntu and Fedora:
+For each of Windows, a DEB system (Ubuntu) and an RPM system (AlmaLinux):
 
 - [ ] The package installs, Drop is in the start menu or the application list with its icon.
 - [ ] Drop starts, the network is the local one (`192.168.x.x` or similar), not a Docker or VPN

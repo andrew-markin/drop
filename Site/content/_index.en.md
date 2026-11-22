@@ -116,8 +116,8 @@ download:
     text: "Ubuntu 22.04+, Debian 12+ and compatible distributions."
     button: "Package (.deb)"
   rpm:
-    title: "Fedora, RHEL"
-    text: "Fedora 39+, RHEL 9+, AlmaLinux 9+ and compatible distributions."
+    title: "RED OS, RHEL"
+    text: "RED OS 7.3+, RHEL / AlmaLinux / Rocky Linux 8+, Fedora and compatible distributions."
     button: "Package (.rpm)"
   requirements: "Install Drop only on the computer that receives files. Devices that send them need nothing but a modern browser and the same local network."
   verify: "Every release includes a `SHA256SUMS` file to check that the download wasn't altered."

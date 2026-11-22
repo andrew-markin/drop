@@ -34,10 +34,10 @@ https://github.com/andrew-markin/mult.
 ## CI
 
 `.github/workflows/build.yml` checks the web client, regenerates the protocol vectors, and builds
-and tests everything on Windows and inside the `Dockerfile.ubuntu` and `Dockerfile.fedora` builder
+and tests everything on Windows and inside the `Dockerfile.deb` and `Dockerfile.rpm` builder
 images (Qt built from sources, libsodium, Node.js). Builder images are kept in GitHub Container
 Registry under the hash of their Dockerfile, so changing a Dockerfile means hours of Qt build in
-CI; build it locally first with `docker build -t drop-ubuntu-builder - < Dockerfile.ubuntu`.
+CI; build it locally first with `docker build -t drop-deb-builder - < Dockerfile.deb`.
 
 ## Decisions to keep
 
