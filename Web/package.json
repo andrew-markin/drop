@@ -23,8 +23,8 @@
     "@noble/hashes": "^2.4.0",
     "@quasar/extras": "^2.1.0",
     "nosleep.js": "^0.12.0",
-    "quasar": "^2.35.4",
-    "vue": "^3.5.45"
+    "quasar": "^2.35.6",
+    "vue": "^3.5.46"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -34,15 +34,15 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-x": "^4.18.1",
-    "eslint-plugin-oxlint": "~1.93.0",
+    "eslint-plugin-oxlint": "~1.94.0",
     "eslint-plugin-simple-import-sort": "^14.0.0",
     "eslint-plugin-vue": "~10.12.0",
     "globals": "^17.14.0",
-    "npm-run-all2": "^9.0.4",
-    "oxlint": "~1.93.0",
+    "npm-run-all2": "^9.1.0",
+    "oxlint": "~1.94.0",
     "prettier": "3.10.1",
     "sass-embedded": "^1.108.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
